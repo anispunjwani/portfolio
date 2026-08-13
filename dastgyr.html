@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dastgyr Technologies — Anis Amir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+
+  /* ============================================================
+     TOKENS
+     Palette: warm paper + near-black ink + a single signal-blue
+     accent, referencing engineering redlines and transit-line
+     diagrams rather than the usual cream/terracotta pairing.
+     Type: Fraunces (voice) / Space Grotesk (structure) /
+     Space Mono (data, labels, wayfinding).
+     ============================================================ */
+
+  :root{
+    --paper: #F3F0E9;
+    --paper-deep: #EAE5D8;
+    --ink: #1B1B18;
+    --muted: #66635A;
+    --line: #D6D0BF;
+    --accent: #2452A6;
+    --accent-ink: #16357C;
+    --accent-soft: rgba(36,82,166,0.08);
+    --placeholder-bg: repeating-linear-gradient(135deg, rgba(27,27,24,0.04), rgba(27,27,24,0.04) 6px, transparent 6px, transparent 12px);
+
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Space Grotesk', -apple-system, sans-serif;
+    --mono: 'Space Mono', 'Courier New', monospace;
+
+    --edge: 20px;
+    --rail-w: 0px;
+  }
+
+  @media (min-width: 900px){
+    :root{ --edge: 84px; --rail-w: 64px; }
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection{ background: var(--accent); color: var(--paper); }
+  a{ color: inherit; }
+  img{ max-width:100%; display:block; }
+
+  .wrap{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-left: var(--edge);
+    padding-right: var(--edge);
+  }
+
+  /* focus visibility, kept even though palette is muted */
+  a:focus-visible, button:focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+
+  /* ============================================================
+     WAYFINDING RAIL (signature element)
+     A fixed vertical line with station dots, echoing a transit
+     route diagram. Doubles as a section index. Desktop only —
+     on mobile the same idea compresses into the mono eyebrow tags.
+     ============================================================ */
+  .rail{
+    display:none;
+  }
+  @media (min-width: 900px){
+    .rail{
+      display:block;
+      position: fixed;
+      left: 26px;
+      top: 0;
+      bottom: 0;
+      width: 40px;
+      z-index: 40;
+      pointer-events: none;
+    }
+    .rail-line{
+      position:absolute;
+      left: 50%;
+      top: 120px;
+      bottom: 120px;
+      width: 1px;
+      background: var(--line);
+    }
+    .rail-stop{
+      position:absolute;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 9px; height:9px;
+      border-radius: 50%;
+      background: var(--paper);
+      border: 1px solid var(--muted);
+      pointer-events:auto;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .2s, border-color .2s, transform .2s;
+    }
+    .rail-stop::before{
+      /* enlarge the clickable area without changing the visible dot size */
+      content:"";
+      position:absolute;
+      top:50%; left:50%;
+      width: 28px; height:28px;
+      transform: translate(-50%,-50%);
+    }
+    .rail-stop.active{
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: translate(-50%, -50%) scale(1.3);
+    }
+    .rail-label{
+      position:absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      white-space: nowrap;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      padding: 3px 7px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s;
+    }
+    /* Label shows on hover/focus only, never while simply active/scrolled-to.
+       This is the fix: a persistent label at scroll position was the thing
+       overlapping card content lower on the page. */
+    .rail-stop:hover .rail-label,
+    .rail-stop:focus-visible .rail-label{ opacity: 1; }
+  }
+
+  /* ============================================================
+     NAV
+     ============================================================ */
+  header{
+    position: sticky;
+    top:0;
+    z-index: 50;
+    background: rgba(243,240,233,0.92);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 16px var(--edge);
+  }
+  .mark{
+    font-family: var(--mono);
+    font-weight:700;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    text-decoration:none;
+    border: 1px solid var(--ink);
+    padding: 4px 8px;
+  }
+  .navlinks{
+    display:flex;
+    gap: 22px;
+    list-style:none;
+    margin:0; padding:0;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+  .navlinks a{ text-decoration:none; }
+  .navlinks a:hover{ color: var(--accent); }
+
+  /* ============================================================
+     SECTION SCAFFOLDING
+     ============================================================ */
+  section{ padding: 72px 0; position:relative; }
+  @media (min-width:900px){ section{ padding: 120px 0; } }
+
+  .eyebrow{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .eyebrow::before{
+    content:"";
+    width: 22px; height:1px;
+    background: var(--accent);
+    display:inline-block;
+  }
+
+  h1,h2,h3{ font-family: var(--serif); font-weight:600; margin:0; }
+  h2{ font-size: clamp(28px, 4.5vw, 42px); line-height:1.12; letter-spacing: -0.01em; }
+  h3{ font-size: clamp(20px, 2.6vw, 24px); line-height:1.25; }
+
+  p{ margin: 0 0 16px; color: var(--ink); }
+  .lede{ font-size: 18px; color: var(--muted); max-width: 640px; }
+
+  hr.rule{ border:none; border-top:1px solid var(--line); margin: 0; }
+
+  /* ============================================================
+     HERO
+     ============================================================ */
+  .hero{
+    padding-top: 60px;
+    min-height: 82vh;
+    display:flex;
+    align-items:center;
+  }
+  @media (min-width:900px){ .hero{ padding-top: 40px; } }
+  .hero h1{
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(34px, 6.4vw, 66px);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    max-width: 16ch;
+    margin-bottom: 26px;
+  }
+  .hero h1 em{
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent-ink);
+  }
+  .hero .lede{ font-size: 19px; max-width: 58ch; margin-bottom: 34px; }
+  .hero-cta{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 14px;
+    align-items:center;
+  }
+  .btn{
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-decoration:none;
+    padding: 12px 20px;
+    border: 1px solid var(--ink);
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition: background .15s, color .15s;
+  }
+  .btn.primary{ background: var(--ink); color: var(--paper); }
+  .btn.primary:hover{ background: var(--accent-ink); border-color: var(--accent-ink); }
+  .btn.ghost:hover{ background: var(--ink); color: var(--paper); }
+  .btn.placeholder{
+    border-style: dashed;
+    color: var(--muted);
+    border-color: var(--muted);
+  }
+  .btn.placeholder:hover{ background:none; color: var(--accent); border-color: var(--accent); }
+
+
+  /* ============================================================
+     CASE STUDY HERO
+     ============================================================ */
+  .cs-hero{ padding-top: 140px; padding-bottom: 0; }
+  @media (min-width:900px){ .cs-hero{ padding-top: 160px; } }
+  .cs-back{
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    color: var(--muted);
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom: 28px;
+  }
+  .cs-back:hover{ color: var(--accent-ink); }
+  .cs-title{
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(30px, 5.2vw, 54px);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    max-width: 20ch;
+    margin: 0 0 20px;
+  }
+  .cs-title em{ font-style: italic; font-weight:500; color: var(--accent-ink); }
+  .cs-tags{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom: 40px; }
+
+  .cs-cover{
+    width:100%;
+    aspect-ratio: 16/9;
+    overflow:hidden;
+    border: 1px solid var(--line);
+    background: var(--paper-deep);
+    margin-bottom: 0;
+  }
+  .cs-cover img{ width:100%; height:100%; object-fit:cover; }
+
+  /* ============================================================
+     META GRID (role, timeline, platform, etc.)
+     ============================================================ */
+  .cs-meta{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 24px;
+    padding: 44px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  @media (min-width:700px){ .cs-meta{ grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width:900px){ .cs-meta{ grid-template-columns: repeat(6, 1fr); gap: 24px; } }
+  .cs-meta-item span{
+    display:block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .cs-meta-item p{ font-size: 14px; margin:0; line-height:1.45; }
+
+  /* ============================================================
+     SECTION HEADERS + BODY COPY
+     ============================================================ */
+  .cs-section{ padding: 56px 0; border-bottom: 1px solid var(--line); }
+  .cs-section:last-of-type{ border-bottom:none; }
+  @media (min-width:900px){ .cs-section{ padding: 80px 0; } }
+  .cs-section-head{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 22px;
+  }
+  .cs-section h2{ font-size: clamp(24px, 3.4vw, 32px); margin-bottom: 22px; max-width: 22ch; }
+  .cs-body{ max-width: 68ch; }
+  .cs-body p{ color: var(--muted); font-size: 16px; }
+  .cs-body p strong{ color: var(--ink); font-weight:600; }
+  .cs-body blockquote{
+    margin: 28px 0;
+    padding-left: 20px;
+    border-left: 2px solid var(--accent);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 19px;
+    color: var(--ink);
+  }
+
+  /* ============================================================
+     FIGURES (image + mono caption)
+     ============================================================ */
+  .cs-figure{ margin: 36px 0; }
+  .cs-figure img{ width:100%; border:1px solid var(--line); background: var(--paper-deep); }
+  .cs-figure figcaption{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+  .cs-figure-pair{ display:grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width:700px){ .cs-figure-pair{ grid-template-columns: 1fr 1fr; } }
+
+  /* ============================================================
+     CARD GRIDS (constraints, who we spoke to, insights)
+     ============================================================ */
+  .cs-cards{ display:grid; grid-template-columns: 1fr; gap: 1px; background: var(--line); margin-top: 8px; }
+  @media (min-width:700px){ .cs-cards{ grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width:1000px){ .cs-cards.cols-4{ grid-template-columns: repeat(4, 1fr); } }
+  .cs-card{ background: var(--paper); padding: 26px 24px; }
+  .cs-card-num{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent-ink);
+    display:block;
+    margin-bottom: 10px;
+  }
+  .cs-card h4{
+    font-family: var(--serif);
+    font-weight:600;
+    font-size: 18px;
+    margin: 0 0 8px;
+  }
+  .cs-card p{ font-size: 14px; color: var(--muted); margin:0; }
+
+  /* ============================================================
+     STAT BLOCKS
+     ============================================================ */
+  .cs-stats{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); margin: 36px 0; }
+  @media (min-width:700px){ .cs-stats{ grid-template-columns: repeat(4, 1fr); } }
+  .cs-stat{ background: var(--paper); padding: 26px 20px; }
+  .cs-stat-num{
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(28px, 3.6vw, 38px);
+    color: var(--accent-ink);
+    display:block;
+    margin-bottom: 8px;
+  }
+  .cs-stat p{ font-size: 12.5px; color: var(--muted); margin:0; line-height:1.4; }
+
+  /* ============================================================
+     NUMBERED / ORDERED LIST (redesigned functions, principles)
+     ============================================================ */
+  .cs-list{ list-style:none; margin: 20px 0 0; padding:0; }
+  .cs-list li{
+    display:flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+    font-size: 15px;
+    color: var(--muted);
+  }
+  .cs-list li:last-child{ border-bottom: 1px solid var(--line); }
+  .cs-list li span.n{
+    font-family: var(--mono);
+    color: var(--accent-ink);
+    flex-shrink:0;
+    width: 24px;
+  }
+  .cs-list li strong{ color: var(--ink); }
+
+  /* ============================================================
+     OUTCOME STAT ROWS (Dastgyr outcomes)
+     ============================================================ */
+  .cs-outcomes{ display:flex; flex-direction:column; margin-top: 8px; }
+  .cs-outcome{ padding: 26px 0; border-top: 1px solid var(--line); }
+  .cs-outcome:last-child{ border-bottom: 1px solid var(--line); }
+  .cs-outcome h4{
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight:600;
+    margin: 0 0 8px;
+  }
+  .cs-outcome p{ font-size: 14.5px; color: var(--muted); margin:0; max-width: 64ch; }
+
+  /* ============================================================
+     VIDEO LINK CARD
+     ============================================================ */
+  .cs-video{
+    display:flex;
+    align-items:center;
+    gap: 20px;
+    border: 1px solid var(--line);
+    padding: 20px;
+    margin: 28px 0;
+    text-decoration:none;
+    color: inherit;
+  }
+  .cs-video:hover{ border-color: var(--accent); }
+  .cs-video-thumb{
+    width: 96px; height: 64px;
+    flex-shrink:0;
+    background: var(--ink);
+    color: var(--paper);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family: var(--mono);
+    font-size: 18px;
+  }
+  .cs-video-text span{
+    display:block;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color: var(--muted);
+    margin-bottom:4px;
+  }
+  .cs-video-text strong{ font-family: var(--serif); font-size: 17px; font-weight:600; }
+
+  /* ============================================================
+     PREV / NEXT CASE STUDY NAV
+     ============================================================ */
+  .cs-adjacent{
+    padding: 56px 0;
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .cs-adjacent a{
+    text-decoration:none;
+    color: inherit;
+  }
+  .cs-adjacent-label{
+    display:block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .cs-adjacent-title{
+    font-family: var(--serif);
+    font-weight:600;
+    font-size: clamp(18px, 2.2vw, 22px);
+    transition: color .15s;
+  }
+  .cs-adjacent a:hover .cs-adjacent-title{ color: var(--accent-ink); }
+  .cs-adjacent-next{ text-align: right; margin-left:auto; }
+
+  .pill{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    padding: 4px 8px;
+    display:inline-block;
+    width: fit-content;
+  }
+
+  /* ============================================================
+     CONTACT / FOOTER
+     ============================================================ */
+  footer{
+    background: var(--ink);
+    color: var(--paper);
+    padding: 70px 0 30px;
+  }
+  footer h2{ color: var(--paper); }
+  footer .lede{ color: rgba(243,240,233,0.65); }
+  .contact-links{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 14px;
+    margin-top: 30px;
+  }
+  footer .btn.primary{ background: var(--accent); border-color: var(--accent); color: var(--paper); }
+  footer .btn.primary:hover{ background: var(--paper); color: var(--ink); border-color: var(--paper); }
+  footer .btn.ghost{ border-color: rgba(243,240,233,0.4); }
+  footer .btn.ghost:hover{ background: var(--paper); color: var(--ink); }
+  footer .btn.placeholder{ border-color: rgba(243,240,233,0.3); color: rgba(243,240,233,0.55); }
+  footer .btn.placeholder:hover{ color: var(--accent); border-color: var(--accent); }
+
+  .foot-bottom{
+    margin-top: 70px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(243,240,233,0.15);
+    display:flex;
+    flex-direction: column;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(243,240,233,0.4);
+  }
+  @media (min-width:600px){
+    .foot-bottom{ flex-direction: row; justify-content: space-between; }
+  }
+
+</style>
+</head>
+<body>
+
+  <nav class="rail" aria-hidden="true">
+    <div class="rail-line"></div>
+    <a class="rail-stop" href="#top" data-for="top"><span class="rail-label">TOP</span></a>
+    <a class="rail-stop" href="#situation" data-for="situation"><span class="rail-label">SITUATION</span></a>
+    <a class="rail-stop" href="#driver-app" data-for="driver-app"><span class="rail-label">DRIVER APP</span></a>
+    <a class="rail-stop" href="#routing-engine" data-for="routing-engine"><span class="rail-label">ROUTING ENGINE</span></a>
+    <a class="rail-stop" href="#outcomes" data-for="outcomes"><span class="rail-label">OUTCOMES</span></a>
+  </nav>
+
+  <header>
+    <div class="nav">
+      <a class="mark" href="index.html">AA</a>
+      <ul class="navlinks">
+        <li><a href="index.html#work">Work</a></li>
+        <li><a href="index.html#play">Play</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+      </ul>
+    </div>
+  </header>
+  <main id="top">
+
+    <!-- ============================= HERO ============================= -->
+    <section class="cs-hero">
+      <div class="wrap">
+        <a class="cs-back" href="index.html#work">← Back to selected work</a>
+        <div class="eyebrow">Dastgyr Technologies · Oct 2022 – Jul 2023</div>
+        <h1 class="cs-title">Building a <em>logistics ecosystem</em> from the inside out</h1>
+        <div class="cs-tags">
+          <span class="pill">Product Design</span>
+          <span class="pill">Service Design</span>
+        </div>
+      </div>
+      <div class="wrap" style="margin-top:20px;">
+        <div class="cs-cover">
+          <img src="https://framerusercontent.com/images/teXtmiwSPKWisWxso5BRu3TYS0.png?width=1024&height=576" alt="Blue and orange branding image for Dastgyr, worm's eye view of two shipping containers tapering into the Dastgyr Global logo mark.">
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= META ============================= -->
+    <section style="padding:0;">
+      <div class="wrap">
+        <p class="lede" style="margin:44px 0 0;">How a fragmented, third-party-dependent delivery operation was rebuilt into a unified, in-house logistics system spanning drivers, warehouses, and management.</p>
+        <div class="cs-meta">
+          <div class="cs-meta-item"><span>Other team members</span><p>Hadi Hafeez, Junaid Javed, Amin Akhtar, Hamza Azeem, Hassaan Hasan</p></div>
+          <div class="cs-meta-item"><span>My role</span><p>Product Designer, Design Lead (Driver App)</p></div>
+          <div class="cs-meta-item"><span>Timeline</span><p>~2 months</p></div>
+          <div class="cs-meta-item"><span>Platform</span><p>Android, Web (Admin and Logistics Portals)</p></div>
+          <div class="cs-meta-item"><span>Deliverables</span><p>Driver App, Design System, Workflow Integrations</p></div>
+          <div class="cs-meta-item"><span>Industry</span><p>Logistics, E-Commerce</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= SITUATION ============================= -->
+    <section id="situation" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">The situation</div>
+        <div class="cs-body">
+          <p>Dastgyr is a VC-backed B2B e-commerce platform connecting retailers to suppliers across Pakistan. By late 2022, the company had been operational for close to two years, and having been engineering-first, had relied on its engineers to build internal tools and processes. When a design team was assembled, it quickly became clear that several legacy systems had accumulated significant technical debt.</p>
+          <p>The delivery operation was one of the most critical. Dastgyr had scaled through a lot of bootstrapping, creating manual processes for everything from driver attendance to multi-site pickups and deliveries. Some of those processes had been partially digitized through a mobile app and a set of operations dashboards, but the systems were siloed. Delivery allocation, labor pay reconciliation, and cash reconciliation all took far longer than they should have. The driver app itself had been built without design input, was visually outdated, and had been nearly abandoned.</p>
+          <p>A company-wide design audit surfaced the full extent of the problem and made the case for allocating resources to a proper overhaul rather than continuing to layer new features on top of a broken foundation.</p>
+        </div>
+        <figure class="cs-figure">
+          <img src="https://framerusercontent.com/images/xHPuVE6lDqc0MLMXrW6BIkYXWuk.png?width=2016&height=1134" alt="A hand-made paper diagram of the design audit, with boxes and annotations.">
+          <figcaption>Above: a portion of the design audit, which surfaced a number of gaps in the user experience for the driver app.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============================= INITIATIVE ============================= -->
+    <section class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">The initiative</div>
+        <div class="cs-body">
+          <p>The response was a two-part initiative. First, a proprietary routing engine built by two in-house data scientists on open-source infrastructure, replacing an expensive and inflexible third-party system. A single run of that third-party tool could take hours, any change required restarting the process from scratch, and the API costs were unsustainable at Dastgyr's volume.</p>
+          <p>Second, the design work required to make the engine usable across every touchpoint in the logistics operation. I joined the project mid-way through, brought on specifically to design this front-end layer. My scope covered the driver app end to end, key features in the admin and logistics portals, and the service design connecting them.</p>
+        </div>
+
+        <h3 style="margin-top:44px; margin-bottom:20px;">How the ecosystem fits together</h3>
+        <div class="cs-cards cols-4">
+          <div class="cs-card"><span class="cs-card-num">01</span><h4>Data Science Team</h4><p>Algorithm and engine</p></div>
+          <div class="cs-card"><span class="cs-card-num">02</span><h4>Admin Portal *</h4><p>Route configuration and dispatch</p></div>
+          <div class="cs-card"><span class="cs-card-num">03</span><h4>Driver App *</h4><p>Route execution</p></div>
+          <div class="cs-card"><span class="cs-card-num">04</span><h4>Customer App</h4><p>Delivery tracking</p></div>
+        </div>
+        <p style="font-size:13px; color:var(--muted); margin-top:14px;">* Areas of primary design ownership.</p>
+
+        <h3 style="margin-top:44px; margin-bottom:16px;">Resource distribution</h3>
+        <div class="cs-body">
+          <p>Design supervision came from the Product Design Lead, Hadi Hafeez, who also owned the broader strategy and the algorithm-side design. Visual design execution was shared with Junaid Javed, whom I directed. Engineering was handled primarily by Muhammad Amin. I owned the driver app end to end as well as the driver-related admin portal features, while contributing to service and user flows across the ecosystem and helping define system touchpoints.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= DRIVER APP ============================= -->
+    <section id="driver-app" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">The driver app</div>
+        <div class="cs-body">
+          <p>The existing driver app was a shelved, partially-deployed product: visually outdated, functionally incomplete, and built on a bootstrapped codebase with no design foundation. The challenge was not to start from scratch. The engineering side was already partially deployed, which meant user flows could not be redesigned wholesale. Drivers had familiarity with the old version, and rebuilding the flows entirely would have required retraining a workforce with limited bandwidth for it.</p>
+          <p>The goal was to simplify the pickup and delivery process, optimize it for the drivers, and bring the manual processes into a digital ecosystem that would connect the company's internal functions.</p>
+        </div>
+
+        <h3 style="margin-top:44px; margin-bottom:16px;">Research</h3>
+        <div class="cs-body">
+          <p>We started by defining which functions needed to be consolidated and building a user flow that would integrate them into the new application. Research involved conversations with warehouse operations teams, driver teams, and operations stakeholders to understand how the delivery process actually worked and when the app was being used in the field.</p>
+          <p>One of the more significant findings came from pulling analytics data. The phones our drivers were using had screens smaller than the market average. This was not an assumption we would have made without looking at the data, and it changed a number of fundamental design decisions that followed.</p>
+        </div>
+
+        <div class="cs-figure-pair" style="margin-top:32px;">
+          <figure class="cs-figure" style="margin:0;">
+            <img src="https://framerusercontent.com/images/SDhV3ZFw1XyeRsRZRFXtXYD6fss.png?lossless=1&width=1324&height=589" alt="System diagram for the driver application.">
+          </figure>
+          <figure class="cs-figure" style="margin:0;">
+            <img src="https://framerusercontent.com/images/OT9rhhgfZAjYuSnd4JPSs7sHIL0.png?width=1098&height=816" alt="High-level screenshot of the Figma file showing the prototype driver app.">
+          </figure>
+        </div>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:10px;">Above: a partial user flow diagram and the mobile application development process.</p>
+
+        <h3 style="margin-top:48px; margin-bottom:20px;">Constraints</h3>
+        <div class="cs-cards cols-4">
+          <div class="cs-card"><h4>Engineering lock-in</h4><p>The codebase was already partially deployed. The design had to work within the existing structural logic rather than rebuilding what engineering had already shipped.</p></div>
+          <div class="cs-card"><h4>Non-standard screen size</h4><p>Analytics data revealed drivers were using phones with screens smaller than the market average, a constraint invisible until we looked at the data.</p></div>
+          <div class="cs-card"><h4>In-motion use</h4><p>The app would be checked while driving or at quick stops. Critical information had to be legible at a glance, with no important actions buried below a scroll.</p></div>
+          <div class="cs-card"><h4>Compressed timeline</h4><p>Design and development had to be completed in roughly two months to align with the routing engine deployment schedule.</p></div>
+        </div>
+
+        <h3 style="margin-top:48px; margin-bottom:16px;">Design principles</h3>
+        <div class="cs-body">
+          <p>Rather than applying generic heuristics, we derived a small set of rules directly from the constraints and context of the work.</p>
+        </div>
+        <ul class="cs-list">
+          <li><span class="n">01</span><span>Anything critical belongs above the fold. No important buttons behind a scroll.</span></li>
+          <li><span class="n">02</span><span>Screens surface contextually based on driver status, not manual navigation.</span></li>
+          <li><span class="n">03</span><span>The app functions primarily as a sequencing tool, not an information hub.</span></li>
+          <li><span class="n">04</span><span>Floating action buttons for high-frequency, time-sensitive tasks.</span></li>
+          <li><span class="n">05</span><span>Each screen shows what is next, not what just happened.</span></li>
+        </ul>
+
+        <h3 style="margin-top:48px; margin-bottom:16px;">The design system decision</h3>
+        <div class="cs-body">
+          <p>The existing visual language was too degraded to update incrementally. It was cramped, inconsistent, and unreadable in field conditions. We made the decision to build a new design system for the driver app: one that was legible, systematically structured, and designed for the screen sizes our drivers were actually using.</p>
+          <p>This foundation became the starting point for a broader design system initiative I launched for all Dastgyr products. I transitioned out for graduate school before it was complete. The team finished it after my departure.</p>
+        </div>
+
+        <h3 style="margin-top:48px; margin-bottom:16px;">What the app needed to do</h3>
+        <div class="cs-body">
+          <p>The redesign consolidated a number of previously fragmented or manual functions into a single user flow.</p>
+        </div>
+        <ul class="cs-list">
+          <li><span class="n">01</span><span>Self-marked attendance based on proximity to pickup locations</span></li>
+          <li><span class="n">02</span><span>Simplified menus and navigation for use while driving</span></li>
+          <li><span class="n">03</span><span>Proximity-based delivery confirmation to ensure correct deliveries</span></li>
+          <li><span class="n">04</span><span>Redundancies built into the flow for missed deliveries and skipped stops</span></li>
+          <li><span class="n">05</span><span>Two-way confirmation systems for cash entry and reconciliation</span></li>
+          <li><span class="n">06</span><span>An optimized spot sales feature</span></li>
+          <li><span class="n">07</span><span>On-route cash deposit stops, removing the need for end-of-day bank runs</span></li>
+          <li><span class="n">08</span><span>A performance tracking mechanism giving drivers visibility into their own earnings and payouts</span></li>
+        </ul>
+
+        <h3 style="margin-top:48px; margin-bottom:16px;">Testing in the field</h3>
+        <div class="cs-body">
+          <p>We tested with five drivers of varied backgrounds in parked trucks, as close to real conditions as scheduling would allow. Drivers told us directly what read clearly, what got missed, and what sequence felt natural. Feedback gathered after deployment was handed off to the team when I transitioned out.</p>
+        </div>
+
+        <figure class="cs-figure">
+          <img src="https://framerusercontent.com/images/336WWRtYkUXx0zJrIdXaLWzZo0.png?width=1920&height=1080" alt="Stylized image of the Dastgyr driver mobile app.">
+          <figcaption>Above: final designs for the Dastgyr driver application.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============================= ROUTING ENGINE FRONT-END ============================= -->
+    <section id="routing-engine" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">The routing engine front-end</div>
+        <div class="cs-body">
+          <p>The routing engine was built by two data scientists, Hamza Azeem and Hassaan Hasan. My role was to design the interfaces through which that engine would be operated, monitored, and overridden by the people running Dastgyr's logistics operation: primarily warehouse managers and delivery coordinators.</p>
+          <p>Before screens could be designed, the system's requirements had to be defined at each touchpoint. That meant mapping what each user type needed to see, when they needed to see it, and what interventions needed to be available in real time, such as handling a closed shop, a traffic jam, or a cash deposit stop.</p>
+        </div>
+
+        <h3 style="margin-top:44px; margin-bottom:16px;">The cash deposit problem</h3>
+        <div class="cs-body">
+          <p>Research interviews with the accounting and finance team and warehouse managers surfaced a recurring operational pain. Drivers were returning to the warehouse each day carrying cash collected from retailers. Someone had to make a separate bank run. Reconciliation was slow and error-prone. Discrepancies were common.</p>
+          <blockquote>The solution was to build bank and cash deposit machine stops directly into the driver's route as first-class waypoints in the algorithm rather than manual additions. This change reduced cash reconciliation time by 98 percent, eliminated manual bank runs, and significantly reduced cash discrepancy rates.</blockquote>
+        </div>
+
+        <h3 style="margin-top:44px; margin-bottom:16px;">Admin and logistics portals</h3>
+        <div class="cs-body">
+          <p>The admin and warehouse logistics portals needed to support:</p>
+        </div>
+        <ul class="cs-list">
+          <li><span class="n">01</span><span>Route configuration and creation by logistics managers, with algorithm-generated suggestions</span></li>
+          <li><span class="n">02</span><span>Real-time route tracking with deviation and idle time detection</span></li>
+          <li><span class="n">03</span><span>Manual override and editing without restarting the full process</span></li>
+          <li><span class="n">04</span><span>Loading mechanisms to inform warehouse staff which orders go on which vehicles</span></li>
+          <li><span class="n">05</span><span>Customer-facing delivery notifications</span></li>
+          <li><span class="n">06</span><span>Cash deposit stop integration within driver routes</span></li>
+        </ul>
+
+        <div class="cs-figure-pair" style="margin-top:32px;">
+          <figure class="cs-figure" style="margin:0;">
+            <img src="https://framerusercontent.com/images/y4M06FdB4VHfWeWJdg5EjR2qNJ4.png?lossless=1&width=2048&height=1589" alt="Screenshot depicting the internal route creation mechanism on the admin portal.">
+          </figure>
+          <figure class="cs-figure" style="margin:0;">
+            <img src="https://framerusercontent.com/images/oXcg5rIWLWc4x4ZYG51MR1uXNSQ.png?width=2000&height=2037" alt="Screenshot depicting the internal route tracking mechanism on the admin portal.">
+          </figure>
+        </div>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:10px;">Above: admin and logistics portal screens for route configuration and real-time tracking.</p>
+
+        <h3 style="margin-top:44px; margin-bottom:16px;">Design approach</h3>
+        <div class="cs-body">
+          <p>To minimize engineering overhead, most admin portal designs were kept at low fidelity, leveraging existing system components wherever possible. The driver app required higher-fidelity treatment given the conditions it was designed for. The two products were built in parallel and deployed together.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= OUTCOMES ============================= -->
+    <section id="outcomes" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">Outcomes</div>
+        <div class="cs-body">
+          <p>The routing engine and driver app went live together. The impact was immediate across multiple dimensions that had previously been accepted as fixed costs of running the operation at scale.</p>
+        </div>
+
+        <div class="cs-outcomes">
+          <div class="cs-outcome">
+            <h4>Decrease in reconciliation time</h4>
+            <p>Total time spent on cash reconciliation after deliveries dropped 98 percent, from 12 hours (a full working day) down to 15 minutes, since most cash was already accounted for during the routes and the data was already available in the system.</p>
+          </div>
+          <div class="cs-outcome">
+            <h4>Elimination of third-party costs</h4>
+            <p>The routing engine meant Dastgyr no longer relied on third-party software and external APIs, removing those costs from operational overhead entirely.</p>
+          </div>
+          <div class="cs-outcome">
+            <h4>Decrease in route processing time</h4>
+            <p>New route generation and processing time went down as services were brought in-house and integrated into the system. Managers could deploy new routes in real time rather than manually building and validating sheets.</p>
+          </div>
+          <div class="cs-outcome">
+            <h4>Efficiency KPIs met</h4>
+            <p>Dastgyr's delivery efficiency KPIs, including benchmarks for fuel consumption, delivery times, kilometers traveled, and delivery success rates, all improved against third-party scores.</p>
+          </div>
+        </div>
+
+        <div class="cs-body" style="margin-top:36px;">
+          <p>Internal systems began speaking to each other for the first time. Logistics, warehouse management, driver operations, and finance were brought into a single connected workflow. Reconciliation, payout, and delivery processes saw increased automation, reduced manual labor, and fewer errors across the board.</p>
+          <p>The design system work started during this project was later expanded into a company-wide standardization effort, completed by the team after my departure.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= ADJACENT CASE STUDY ============================= -->
+    <section style="padding:0;">
+      <div class="wrap">
+        <hr class="rule">
+        <div class="cs-adjacent">
+          <a href="atlas.html">
+            <span class="cs-adjacent-label">Next case study</span>
+            <span class="cs-adjacent-title">Atlas: Parsons × Microsoft →</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================= FOOTER / CONTACT ============================= -->
+  <footer id="contact">
+    <div class="wrap">
+      <div class="eyebrow" style="color:var(--accent);">Get in touch</div>
+      <h2 style="max-width:16ch;">Let's talk about a role, a project, or a problem worth taking apart.</h2>
+      <p class="lede">For the full picture, ask for a résumé or see LinkedIn.</p>
+      <div class="contact-links">
+        <a class="btn primary" href="#" title="Placeholder — mailto link">[Email — placeholder]</a>
+        <a class="btn ghost" href="https://www.linkedin.com/in/anispunjwani">LinkedIn</a>
+        <a class="btn ghost" href="https://www.instagram.com/anispunjwani">Instagram</a>
+      </div>
+
+      <div class="foot-bottom">
+        <span>© 2026 Anis Amir. All rights reserved.</span>
+        <span>You've reached the bottom. There's nothing else down here.</span>
+      </div>
+    </div>
+  </footer>
+
+
+  <script>
+    // Wayfinding rail: dot positions are computed from each section's real
+    // offset in the document (as a share of total scrollable height), then
+    // mapped onto the rail track. Recomputed on load and resize since section
+    // heights change with viewport width and placeholder content.
+    (function(){
+      var stops = document.querySelectorAll('.rail-stop');
+      var track = document.querySelector('.rail-line');
+      if(!stops.length || !track) return;
+
+      var sections = Array.prototype.map.call(stops, function(s){
+        return document.getElementById(s.getAttribute('data-for'));
+      });
+
+      function layout(){
+        // .rail-line and .rail-stop are both fixed-position, so their
+        // coordinates are already viewport-relative. No scrollY math needed,
+        // that was the bug causing dots to fall short of the track's bottom.
+        var trackRect = track.getBoundingClientRect();
+        var trackTop = trackRect.top;
+        var trackHeight = track.offsetHeight;
+
+        var firstTop = sections[0] ? sections[0].offsetTop : 0;
+        var lastSection = sections[sections.length - 1];
+        var lastTop = lastSection ? lastSection.offsetTop : firstTop + 1;
+        var span = (lastTop - firstTop) || 1;
+
+        sections.forEach(function(sec, i){
+          if(!sec) return;
+          var ratio = (sec.offsetTop - firstTop) / span;
+          ratio = Math.max(0, Math.min(1, ratio));
+          stops[i].style.top = (trackTop + ratio * trackHeight) + 'px';
+        });
+      }
+
+      function onScroll(){
+        var atBottom = (window.scrollY + window.innerHeight) >= (document.body.scrollHeight - 2);
+        var pos = window.scrollY + window.innerHeight * 0.3;
+        var activeIndex = 0;
+        sections.forEach(function(sec, i){
+          if(sec && sec.offsetTop <= pos) activeIndex = i;
+        });
+        // The lookahead above can mathematically fall short of the final
+        // section if it sits deep inside a tall footer, so force the last
+        // dot active once the page is actually scrolled to the bottom.
+        if(atBottom) activeIndex = sections.length - 1;
+        stops.forEach(function(s, i){
+          s.classList.toggle('active', i === activeIndex);
+        });
+      }
+
+      layout();
+      onScroll();
+      window.addEventListener('resize', layout);
+      document.addEventListener('scroll', onScroll, { passive: true });
+    })();
+  </script>
+
+
+</body>
+</html>

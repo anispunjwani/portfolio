@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anis Amir — Design Strategy, Product, Systems</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+
+  /* ============================================================
+     TOKENS
+     Palette: warm paper + near-black ink + a single signal-blue
+     accent, referencing engineering redlines and transit-line
+     diagrams rather than the usual cream/terracotta pairing.
+     Type: Fraunces (voice) / Space Grotesk (structure) /
+     Space Mono (data, labels, wayfinding).
+     ============================================================ */
+
+  :root{
+    --paper: #F3F0E9;
+    --paper-deep: #EAE5D8;
+    --ink: #1B1B18;
+    --muted: #66635A;
+    --line: #D6D0BF;
+    --accent: #2452A6;
+    --accent-ink: #16357C;
+    --accent-soft: rgba(36,82,166,0.08);
+    --placeholder-bg: repeating-linear-gradient(135deg, rgba(27,27,24,0.04), rgba(27,27,24,0.04) 6px, transparent 6px, transparent 12px);
+
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Space Grotesk', -apple-system, sans-serif;
+    --mono: 'Space Mono', 'Courier New', monospace;
+
+    --edge: 20px;
+    --rail-w: 0px;
+  }
+
+  @media (min-width: 900px){
+    :root{ --edge: 84px; --rail-w: 64px; }
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection{ background: var(--accent); color: var(--paper); }
+  a{ color: inherit; }
+  img{ max-width:100%; display:block; }
+
+  .wrap{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-left: var(--edge);
+    padding-right: var(--edge);
+  }
+
+  /* focus visibility, kept even though palette is muted */
+  a:focus-visible, button:focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+
+  /* ============================================================
+     WAYFINDING RAIL (signature element)
+     A fixed vertical line with station dots, echoing a transit
+     route diagram. Doubles as a section index. Desktop only —
+     on mobile the same idea compresses into the mono eyebrow tags.
+     ============================================================ */
+  .rail{
+    display:none;
+  }
+  @media (min-width: 900px){
+    .rail{
+      display:block;
+      position: fixed;
+      left: 26px;
+      top: 0;
+      bottom: 0;
+      width: 40px;
+      z-index: 40;
+      pointer-events: none;
+    }
+    .rail-line{
+      position:absolute;
+      left: 50%;
+      top: 120px;
+      bottom: 120px;
+      width: 1px;
+      background: var(--line);
+    }
+    .rail-stop{
+      position:absolute;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 9px; height:9px;
+      border-radius: 50%;
+      background: var(--paper);
+      border: 1px solid var(--muted);
+      pointer-events:auto;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .2s, border-color .2s, transform .2s;
+    }
+    .rail-stop::before{
+      /* enlarge the clickable area without changing the visible dot size */
+      content:"";
+      position:absolute;
+      top:50%; left:50%;
+      width: 28px; height:28px;
+      transform: translate(-50%,-50%);
+    }
+    .rail-stop.active{
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: translate(-50%, -50%) scale(1.3);
+    }
+    .rail-label{
+      position:absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      white-space: nowrap;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      padding: 3px 7px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s;
+    }
+    /* Label shows on hover/focus only, never while simply active/scrolled-to.
+       This is the fix: a persistent label at scroll position was the thing
+       overlapping card content lower on the page. */
+    .rail-stop:hover .rail-label,
+    .rail-stop:focus-visible .rail-label{ opacity: 1; }
+  }
+
+  /* ============================================================
+     NAV
+     ============================================================ */
+  header{
+    position: sticky;
+    top:0;
+    z-index: 50;
+    background: rgba(243,240,233,0.92);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 16px var(--edge);
+  }
+  .mark{
+    font-family: var(--mono);
+    font-weight:700;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    text-decoration:none;
+    border: 1px solid var(--ink);
+    padding: 4px 8px;
+  }
+  .navlinks{
+    display:flex;
+    gap: 22px;
+    list-style:none;
+    margin:0; padding:0;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+  .navlinks a{ text-decoration:none; }
+  .navlinks a:hover{ color: var(--accent); }
+
+  /* ============================================================
+     SECTION SCAFFOLDING
+     ============================================================ */
+  section{ padding: 72px 0; position:relative; }
+  @media (min-width:900px){ section{ padding: 120px 0; } }
+
+  .eyebrow{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .eyebrow::before{
+    content:"";
+    width: 22px; height:1px;
+    background: var(--accent);
+    display:inline-block;
+  }
+
+  h1,h2,h3{ font-family: var(--serif); font-weight:600; margin:0; }
+  h2{ font-size: clamp(28px, 4.5vw, 42px); line-height:1.12; letter-spacing: -0.01em; }
+  h3{ font-size: clamp(20px, 2.6vw, 24px); line-height:1.25; }
+
+  p{ margin: 0 0 16px; color: var(--ink); }
+  .lede{ font-size: 18px; color: var(--muted); max-width: 640px; }
+
+  hr.rule{ border:none; border-top:1px solid var(--line); margin: 0; }
+
+  /* ============================================================
+     HERO
+     ============================================================ */
+  .hero{
+    padding-top: 60px;
+    min-height: 82vh;
+    display:flex;
+    align-items:center;
+  }
+  @media (min-width:900px){ .hero{ padding-top: 40px; } }
+  .hero h1{
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(34px, 6.4vw, 66px);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    max-width: 16ch;
+    margin-bottom: 26px;
+  }
+  .hero h1 em{
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent-ink);
+  }
+  .hero .lede{ font-size: 19px; max-width: 58ch; margin-bottom: 34px; }
+  .hero-cta{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 14px;
+    align-items:center;
+  }
+  .btn{
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-decoration:none;
+    padding: 12px 20px;
+    border: 1px solid var(--ink);
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition: background .15s, color .15s;
+  }
+  .btn.primary{ background: var(--ink); color: var(--paper); }
+  .btn.primary:hover{ background: var(--accent-ink); border-color: var(--accent-ink); }
+  .btn.ghost:hover{ background: var(--ink); color: var(--paper); }
+  .btn.placeholder{
+    border-style: dashed;
+    color: var(--muted);
+    border-color: var(--muted);
+  }
+  .btn.placeholder:hover{ background:none; color: var(--accent); border-color: var(--accent); }
+
+  /* ============================================================
+     WORK
+     ============================================================ */
+  .work-head{
+    display:flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 48px;
+  }
+  .work-head p.lede{ margin:0; }
+
+  .case-list{ display:flex; flex-direction:column; gap: 1px; background: var(--line); }
+  .case{
+    background: var(--paper);
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding: 32px 0;
+  }
+  @media (min-width:900px){
+    .case{
+      grid-template-columns: 0.9fr 1.5fr 0.8fr;
+      gap: 40px;
+      align-items:center;
+      padding: 44px 0;
+    }
+  }
+  .case:hover .case-title{ color: var(--accent-ink); }
+  .case:hover .case-thumb img{ transform: scale(1.03); }
+
+  .case-thumb{
+    display:block;
+    aspect-ratio: 4/3;
+    overflow:hidden;
+    background: var(--paper-deep);
+    border: 1px solid var(--line);
+  }
+  .case-thumb img{ width:100%; height:100%; object-fit: cover; transition: transform .35s ease; }
+  .case-thumb.placeholder{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 16px;
+    background-image: var(--placeholder-bg);
+  }
+  .case-thumb.placeholder span{
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    line-height:1.5;
+  }
+
+  .case-tag{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display:block;
+  }
+  .case-title{
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(19px, 2.4vw, 24px);
+    line-height:1.25;
+    margin-bottom: 10px;
+    display:block;
+    text-decoration:none;
+    color: inherit;
+    transition: color .15s;
+  }
+  .case-title:hover{ color: var(--accent-ink); }
+  .case-desc{ color: var(--muted); font-size: 14.5px; margin:0; }
+
+  .case-meta{ display:flex; flex-direction:column; gap: 10px; }
+  .pill{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    padding: 4px 8px;
+    display:inline-block;
+    width: fit-content;
+  }
+  .status-soon{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .case-arrow{ font-family: var(--mono); font-size:13px; color: var(--muted); text-decoration:none; }
+  .case-arrow:hover{ color: var(--accent-ink); }
+  .case-also{ font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+  .case-also a{ color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; }
+  .case-also a:hover{ color: var(--accent); }
+
+  /* Further proof of work: link-forward rows, no cover imagery */
+  .proof-list{ display:flex; flex-direction:column; }
+  .proof-row{
+    padding: 22px 0;
+    border-top: 1px solid var(--line);
+  }
+  .proof-row:last-child{ border-bottom: 1px solid var(--line); }
+  .proof-org{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display:block;
+    margin-bottom: 8px;
+  }
+  .proof-desc{ margin:0; max-width: 70ch; font-size: 15px; }
+  .proof-desc a{ color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; }
+  .proof-desc a:hover{ color: var(--accent); }
+
+  /* Play section: experimental work + photography, placeholder scaffolding */
+  .play-grid{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 56px;
+  }
+  @media (min-width:900px){ .play-grid{ grid-template-columns: 1fr 1fr; gap: 64px; } }
+  .play-block .status-soon{ display:block; margin-top: 14px; }
+  .play-thumbs{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .play-thumb{
+    aspect-ratio: 1/1;
+    background-image: var(--placeholder-bg);
+    background-color: var(--paper-deep);
+    border: 1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 6px;
+  }
+  .play-thumb span{
+    font-family: var(--mono);
+    font-size: 8px;
+    color: var(--muted);
+    line-height:1.4;
+  }
+
+  /* ============================================================
+     ABOUT
+     ============================================================ */
+  .about-head{
+    display:flex;
+    align-items:flex-start;
+    gap: 22px;
+    margin-bottom: 36px;
+  }
+  .about-photo{
+    flex-shrink: 0;
+    width: 76px;
+    height: 96px;
+    background: var(--paper-deep);
+    border: 1px solid var(--line);
+    background-image: var(--placeholder-bg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 4px;
+  }
+  @media (min-width:900px){
+    .about-photo{ width: 96px; height: 120px; }
+  }
+  .about-photo span{
+    font-family: var(--mono);
+    font-size: 7px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+  }
+  .about-head h2{ margin-bottom: 0; }
+  .about-body{ max-width: 74ch; }
+  .about-body h3{ margin-top: 34px; margin-bottom: 12px; }
+  .about-body h3:first-child{ margin-top:0; }
+  .about-body p{ color: var(--muted); font-size: 15.5px; max-width: 62ch; }
+  .about-body p strong{ color: var(--ink); font-weight: 600; }
+
+  /* ============================================================
+     EXPERIENCE / EDUCATION
+     ============================================================ */
+  .cols2{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 56px;
+  }
+  @media (min-width:900px){ .cols2{ grid-template-columns: 1fr 1fr; gap: 80px; } }
+
+  .rowlist{ list-style:none; margin:0; padding:0; }
+  .rowlist li{
+    display:flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+  }
+  .rowlist li:last-child{ border-bottom: 1px solid var(--line); }
+  .row-org{ font-weight: 600; font-size: 14.5px; }
+  .row-role{ color: var(--muted); font-size: 13.5px; margin-top:2px; }
+  .row-date{
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    white-space: nowrap;
+    text-align:right;
+    flex-shrink:0;
+    padding-top: 2px;
+  }
+
+  /* ============================================================
+     CONTACT / FOOTER
+     ============================================================ */
+  footer{
+    background: var(--ink);
+    color: var(--paper);
+    padding: 70px 0 30px;
+  }
+  footer h2{ color: var(--paper); }
+  footer .lede{ color: rgba(243,240,233,0.65); }
+  .contact-links{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 14px;
+    margin-top: 30px;
+  }
+  footer .btn.primary{ background: var(--accent); border-color: var(--accent); color: var(--paper); }
+  footer .btn.primary:hover{ background: var(--paper); color: var(--ink); border-color: var(--paper); }
+  footer .btn.ghost{ border-color: rgba(243,240,233,0.4); }
+  footer .btn.ghost:hover{ background: var(--paper); color: var(--ink); }
+  footer .btn.placeholder{ border-color: rgba(243,240,233,0.3); color: rgba(243,240,233,0.55); }
+  footer .btn.placeholder:hover{ color: var(--accent); border-color: var(--accent); }
+
+  .foot-bottom{
+    margin-top: 70px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(243,240,233,0.15);
+    display:flex;
+    flex-direction: column;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(243,240,233,0.4);
+  }
+  @media (min-width:600px){
+    .foot-bottom{ flex-direction: row; justify-content: space-between; }
+  }
+
+  /* section divider rule used between major sections */
+  .divider{ border-top: 1px solid var(--line); }
+
+</style>
+</head>
+<body>
+
+  <!-- Wayfinding rail: signature element, desktop only. Dot positions are computed
+       from real section offsets in JS below, not guessed percentages. -->
+  <nav class="rail" aria-hidden="true">
+    <div class="rail-line"></div>
+    <a class="rail-stop" href="#hero" data-for="hero"><span class="rail-label">00 — TOP</span></a>
+    <a class="rail-stop" href="#work" data-for="work"><span class="rail-label">01 — WORK</span></a>
+    <a class="rail-stop" href="#proof" data-for="proof"><span class="rail-label">02 — PROOF</span></a>
+    <a class="rail-stop" href="#play" data-for="play"><span class="rail-label">03 — PLAY</span></a>
+    <a class="rail-stop" href="#about" data-for="about"><span class="rail-label">04 — ABOUT</span></a>
+    <a class="rail-stop" href="#history" data-for="history"><span class="rail-label">05 — HISTORY</span></a>
+    <a class="rail-stop" href="#contact" data-for="contact"><span class="rail-label">06 — CONTACT</span></a>
+  </nav>
+
+  <header>
+    <div class="nav">
+      <a class="mark" href="#hero">AA</a>
+      <ul class="navlinks">
+        <li><a href="#work">Work</a></li>
+        <li><a href="#play">Play</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <!-- Nav kept short on purpose; "More work" and "History" are reachable
+           by scroll and via the rail, not cluttered into top nav. -->
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============================= HERO ============================= -->
+    <section id="hero" class="hero">
+      <div class="wrap">
+        <div class="eyebrow">Anis Amir — Design Strategy, Product, Systems</div>
+        <h1>I work on problems that sit between <em>systems, people, and decisions.</em></h1>
+        <p class="lede">A design-led approach to strategy, systems, and execution. Seven years across product, UX, operations, and consulting, spent learning to see the hidden logic in a problem before jumping to solutions: what can go wrong, where complexity starts creeping in, and when simplicity is the smarter move.</p>
+        <div class="hero-cta">
+          <a class="btn primary" href="#work">View selected work →</a>
+          <a class="btn placeholder" href="#" title="Placeholder — link to PDF résumé">[Résumé — placeholder link]</a>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ============================= WORK ============================= -->
+    <section id="work">
+      <div class="wrap">
+        <div class="work-head">
+          <div class="eyebrow">Selected work</div>
+          <h2>A partial record of the places and problems I've worked on.</h2>
+          <p class="lede">Two projects are written up in full below. The rest are in progress — ask for a walkthrough or a CV in the meantime.</p>
+        </div>
+
+        <div class="case-list">
+
+          <!-- Real case study: Dastgyr -->
+          <div class="case">
+            <a class="case-thumb" href="dastgyr.html">
+              <img src="https://framerusercontent.com/images/teXtmiwSPKWisWxso5BRu3TYS0.png?width=1024&height=576" alt="Dastgyr branding image, blue and orange, showing shipping containers tapering to the Dastgyr Global logo mark.">
+            </a>
+            <div>
+              <span class="case-tag">Dastgyr Technologies · Oct 2022 – Jul 2023</span>
+              <a class="case-title" href="dastgyr.html">Building a logistics ecosystem from the inside out</a>
+              <p class="case-desc">A fragmented, third-party-dependent delivery operation rebuilt into a unified, in-house system spanning drivers, warehouses, and management. Cash reconciliation time dropped 98 percent.</p>
+              <p class="case-also">Also see: <a href="https://www.behance.net/gallery/194579985/Dastgyr-Global-Corporate-Rebranding">corporate rebrand</a> · <a href="https://dastgyr.com/">dastgyr.com</a></p>
+            </div>
+            <div class="case-meta">
+              <span class="pill">Product Design</span>
+              <span class="pill">Service Design</span>
+              <a class="case-arrow" href="dastgyr.html">Read the case study →</a>
+            </div>
+          </div>
+
+          <!-- Real case study: Atlas -->
+          <div class="case">
+            <a class="case-thumb" href="atlas.html">
+              <img src="https://framerusercontent.com/images/ElylVu9vp2VuYMF5Mf1RUXTWQts.png?width=1024&height=576" alt="Atlas widget concept shown in context inside a Windows 11 desktop environment.">
+            </a>
+            <div>
+              <span class="case-tag">Parsons × Microsoft · Spring 2024</span>
+              <a class="case-title" href="atlas.html">Atlas: designing for context switching, not just ADHD</a>
+              <p class="case-desc">An open Microsoft brief on AI and underserved communities, narrowed through research into a deployable Windows 11 concept, validated by Microsoft's Inclusive Design team.</p>
+            </div>
+            <div class="case-meta">
+              <span class="pill">Design Strategy</span>
+              <span class="pill">Product Design</span>
+              <a class="case-arrow" href="atlas.html">Read the case study →</a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= FURTHER PROOF OF WORK ============================= -->
+    <section id="proof" class="divider" style="background:var(--paper-deep);">
+      <div class="wrap">
+        <div class="work-head">
+          <div class="eyebrow">Further proof of work</div>
+          <h2>Referenced, not written up.</h2>
+          <p class="lede">Live products, publications, and sites rather than full case studies. Included for breadth. Full work history is below, or ask for a CV.</p>
+        </div>
+
+        <div class="proof-list">
+
+          <div class="proof-row">
+            <span class="proof-org">Parsons School of Design</span>
+            <p class="proof-desc">Contributed research support to a <a href="https://michelangelo-scholar.com/JDSSI_2024-2-a00020" target="_blank" rel="noopener">published paper</a> critiquing nudge theory through a design lens, led recitation for an <a href="https://courses.newschool.edu/courses/PLDS2500/" target="_blank" rel="noopener">undergraduate design studies course</a>, and completed a capstone project building an NYC building energy retrofit prioritization tool.</p>
+          </div>
+
+          <div class="proof-row">
+            <span class="proof-org">Circadia Health</span>
+            <p class="proof-desc">Designed a clinical intelligence platform for web, <a href="https://apps.apple.com/us/app/circadia-cip/id1671300278" target="_blank" rel="noopener">iOS</a>, and <a href="https://play.google.com/store/apps/details?id=com.circadia.cip" target="_blank" rel="noopener">Android</a>, along with <a href="https://apps.apple.com/us/app/circadia-member-app/id6759559104" target="_blank" rel="noopener">a patient-facing app</a> and the <a href="https://circadia.health/" target="_blank" rel="noopener">redeveloped corporate website</a>.</p>
+          </div>
+
+          <div class="proof-row">
+            <span class="proof-org">Optera Digital</span>
+            <p class="proof-desc">Designed enterprise energy dashboards for <a href="https://web.archive.org/web/20240916183232/https://www.aug-e.io/en" target="_blank" rel="noopener">Aug.E</a> and developed UI and game writing for <a href="https://www.raptrgames.com/" target="_blank" rel="noopener">Raptr Games</a>, alongside a full concept and brand built for a healthcare RFP response.</p>
+          </div>
+
+          <div class="proof-row">
+            <span class="proof-org">Aga Khan Development Network</span>
+            <p class="proof-desc">Part of the team working on the digital transformation of <a href="https://the.ismaili/" target="_blank" rel="noopener">The Ismaili</a>, moving it from a news source into a unified community platform for events, resources, content, and commerce.</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= PLAY ============================= -->
+    <section id="play" class="divider">
+      <div class="wrap">
+        <div class="work-head">
+          <div class="eyebrow">Play</div>
+          <h2>Work that doesn't fit a case study format.</h2>
+          <p class="lede">Experiments, side builds, and photography. This section is being built out, structure is ready, content is coming.</p>
+        </div>
+
+        <div class="play-grid">
+          <div class="play-block">
+            <span class="proof-org">Experimental work</span>
+            <p class="proof-desc" style="margin-bottom:18px;">Smaller, faster projects that don't need the full weight of a case study: prototypes, tools, one-off builds.</p>
+            <div class="play-thumbs">
+              <div class="play-thumb"><span>[PLACEHOLDER<br>Experiment 01]</span></div>
+              <div class="play-thumb"><span>[PLACEHOLDER<br>Experiment 02]</span></div>
+              <div class="play-thumb"><span>[PLACEHOLDER<br>Experiment 03]</span></div>
+            </div>
+            <span class="status-soon">Coming soon</span>
+          </div>
+
+          <div class="play-block">
+            <span class="proof-org">Photography</span>
+            <p class="proof-desc" style="margin-bottom:18px;">Photography from hikes, cities, and everyday wandering, kept separate from the work above.</p>
+            <div class="play-thumbs">
+              <div class="play-thumb"><span>[PLACEHOLDER<br>Photo 01]</span></div>
+              <div class="play-thumb"><span>[PLACEHOLDER<br>Photo 02]</span></div>
+              <div class="play-thumb"><span>[PLACEHOLDER<br>Photo 03]</span></div>
+            </div>
+            <span class="status-soon">Coming soon</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================= ABOUT ============================= -->
+    <section id="about" class="divider">
+      <div class="wrap">
+        <div class="eyebrow">About</div>
+        <div class="about-head">
+          <div class="about-photo">
+            <span>[PHOTO]</span>
+          </div>
+          <h2>I work on problems that sit between systems, people, and decisions.</h2>
+        </div>
+        <div class="about-body">
+            <p>My work is grounded in a design-led way of thinking that has expanded well beyond design itself. Across product, UX, operations, consulting, and research, I help organizations navigate complexity, align around what matters, and make better decisions under real constraints.</p>
+
+            <h3>How I think</h3>
+            <p>I tend to think in systems before I think in outputs, paying attention to the underlying structure of a problem before jumping to solutions: how information moves, where incentives misalign, which assumptions are quietly shaping decisions, and what happens downstream when something scales.</p>
+            <p>Most organizations respond to uncertainty by adding more: more features, more process, more layers, more meetings. My instinct runs the other way. Reduce noise, find the governing logic, identify the constraint that matters most, and build only what meaningfully changes the system.</p>
+            <p>I'm especially attentive to the moments people avoid saying what they already know to be true: a team building something because of the momentum already behind it, a process that survives because nobody has stepped back far enough to question it. Recognizing those patterns early, and knowing when something is overdesigned versus when simplicity is the smarter move, is a big part of the work.</p>
+
+            <h3>How I work</h3>
+            <p>Moving between product, UX, operations, strategy, and research taught me that most problems are rarely isolated. A product issue is often a communication issue. A workflow issue is sometimes an incentive issue. A strategy problem can quietly become a systems problem.</p>
+            <p>Because of that, my role shifts with what the situation needs. Sometimes I'm leading research and shaping direction. Sometimes I'm redesigning an experience, facilitating alignment, or helping a team understand what should not be built in the first place.</p>
+
+            <h3>Outside of work</h3>
+            <p>I spend a lot of time thinking about cities, systems, culture, and how people make meaning together. I care about work that holds up in the real world, the kind that stays useful after the presentation ends.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= EXPERIENCE / EDUCATION ============================= -->
+    <section id="history" class="divider" style="background:var(--paper-deep);">
+      <div class="wrap">
+        <div class="eyebrow">Work history &amp; education</div>
+        <div class="cols2">
+          <div>
+            <h3 style="margin-bottom:18px;">Experience</h3>
+            <ul class="rowlist">
+              <li>
+                <div><div class="row-org">Future Meets Present</div><div class="row-role">Design Strategist</div></div>
+                <div class="row-date">Jul 2025 — Present</div>
+              </li>
+              <li>
+                <div><div class="row-org">Independent Consultant</div><div class="row-role">Product and Strategy Consultant</div></div>
+                <div class="row-date">Mar 2023 — Oct 2025</div>
+              </li>
+              <li>
+                <div><div class="row-org">Parsons School of Design</div><div class="row-role">Graduate Teaching &amp; Research Assistant</div></div>
+                <div class="row-date">May 2024 — May 2025</div>
+              </li>
+              <li>
+                <div><div class="row-org">Dastgyr Technologies</div><div class="row-role">Product Strategist</div></div>
+                <div class="row-date">Oct 2022 — Mar 2023</div>
+              </li>
+              <li>
+                <div><div class="row-org">Optera Digital</div><div class="row-role">UX and Strategy Consultant</div></div>
+                <div class="row-date">Aug 2021 — Oct 2022</div>
+              </li>
+              <li>
+                <div><div class="row-org">Amal Academy</div><div class="row-role">Program Manager</div></div>
+                <div class="row-date">Feb 2020 — Jul 2021</div>
+              </li>
+              <li>
+                <div><div class="row-org">Creative Chaos</div><div class="row-role">Digital Product Designer</div></div>
+                <div class="row-date">Aug 2018 — Jun 2019</div>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="margin-bottom:18px;">Education</h3>
+            <ul class="rowlist">
+              <li>
+                <div><div class="row-org">Parsons School of Design</div><div class="row-role">MS, Strategic Design and Management</div></div>
+                <div class="row-date">Aug 2023 — May 2025</div>
+              </li>
+              <li>
+                <div><div class="row-org">Habib University</div><div class="row-role">BA (Hons), Communication Studies and Design</div></div>
+                <div class="row-date">Aug 2014 — May 2018</div>
+              </li>
+              <li>
+                <div><div class="row-org">UNC Wilmington</div><div class="row-role">BA, Communication Studies (Exchange)</div></div>
+                <div class="row-date">Jan — May 2017</div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================= FOOTER / CONTACT ============================= -->
+  <footer id="contact">
+    <div class="wrap">
+      <div class="eyebrow" style="color:var(--accent);">Get in touch</div>
+      <h2 style="max-width:16ch;">Let's talk about a role, a project, or a problem worth taking apart.</h2>
+      <p class="lede">For the full picture, ask for a résumé or see LinkedIn.</p>
+      <div class="contact-links">
+        <a class="btn primary" href="#" title="Placeholder — mailto link">[Email — placeholder]</a>
+        <a class="btn ghost" href="https://www.linkedin.com/in/anispunjwani">LinkedIn</a>
+        <a class="btn ghost" href="https://www.instagram.com/anispunjwani">Instagram</a>
+      </div>
+
+      <div class="foot-bottom">
+        <span>© 2026 Anis Amir. All rights reserved.</span>
+        <span>You've reached the bottom. There's nothing else down here.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Wayfinding rail: dot positions are computed from each section's real
+    // offset in the document (as a share of total scrollable height), then
+    // mapped onto the rail track. Recomputed on load and resize since section
+    // heights change with viewport width and placeholder content.
+    (function(){
+      var stops = document.querySelectorAll('.rail-stop');
+      var track = document.querySelector('.rail-line');
+      if(!stops.length || !track) return;
+
+      var sections = Array.prototype.map.call(stops, function(s){
+        return document.getElementById(s.getAttribute('data-for'));
+      });
+
+      function layout(){
+        // .rail-line and .rail-stop are both fixed-position, so their
+        // coordinates are already viewport-relative. No scrollY math needed,
+        // that was the bug causing dots to fall short of the track's bottom.
+        var trackRect = track.getBoundingClientRect();
+        var trackTop = trackRect.top;
+        var trackHeight = track.offsetHeight;
+
+        var firstTop = sections[0] ? sections[0].offsetTop : 0;
+        var lastSection = sections[sections.length - 1];
+        var lastTop = lastSection ? lastSection.offsetTop : firstTop + 1;
+        var span = (lastTop - firstTop) || 1;
+
+        sections.forEach(function(sec, i){
+          if(!sec) return;
+          var ratio = (sec.offsetTop - firstTop) / span;
+          ratio = Math.max(0, Math.min(1, ratio));
+          stops[i].style.top = (trackTop + ratio * trackHeight) + 'px';
+        });
+      }
+
+      function onScroll(){
+        var atBottom = (window.scrollY + window.innerHeight) >= (document.body.scrollHeight - 2);
+        var pos = window.scrollY + window.innerHeight * 0.3;
+        var activeIndex = 0;
+        sections.forEach(function(sec, i){
+          if(sec && sec.offsetTop <= pos) activeIndex = i;
+        });
+        // The lookahead above can mathematically fall short of the final
+        // section if it sits deep inside a tall footer, so force the last
+        // dot active once the page is actually scrolled to the bottom.
+        if(atBottom) activeIndex = sections.length - 1;
+        stops.forEach(function(s, i){
+          s.classList.toggle('active', i === activeIndex);
+        });
+      }
+
+      layout();
+      onScroll();
+      window.addEventListener('resize', layout);
+      document.addEventListener('scroll', onScroll, { passive: true });
+    })();
+  </script>
+
+</body>
+</html>

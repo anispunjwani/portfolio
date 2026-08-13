@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas — Anis Amir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+
+  /* ============================================================
+     TOKENS
+     Palette: warm paper + near-black ink + a single signal-blue
+     accent, referencing engineering redlines and transit-line
+     diagrams rather than the usual cream/terracotta pairing.
+     Type: Fraunces (voice) / Space Grotesk (structure) /
+     Space Mono (data, labels, wayfinding).
+     ============================================================ */
+
+  :root{
+    --paper: #F3F0E9;
+    --paper-deep: #EAE5D8;
+    --ink: #1B1B18;
+    --muted: #66635A;
+    --line: #D6D0BF;
+    --accent: #2452A6;
+    --accent-ink: #16357C;
+    --accent-soft: rgba(36,82,166,0.08);
+    --placeholder-bg: repeating-linear-gradient(135deg, rgba(27,27,24,0.04), rgba(27,27,24,0.04) 6px, transparent 6px, transparent 12px);
+
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Space Grotesk', -apple-system, sans-serif;
+    --mono: 'Space Mono', 'Courier New', monospace;
+
+    --edge: 20px;
+    --rail-w: 0px;
+  }
+
+  @media (min-width: 900px){
+    :root{ --edge: 84px; --rail-w: 64px; }
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection{ background: var(--accent); color: var(--paper); }
+  a{ color: inherit; }
+  img{ max-width:100%; display:block; }
+
+  .wrap{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-left: var(--edge);
+    padding-right: var(--edge);
+  }
+
+  /* focus visibility, kept even though palette is muted */
+  a:focus-visible, button:focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+
+  /* ============================================================
+     WAYFINDING RAIL (signature element)
+     A fixed vertical line with station dots, echoing a transit
+     route diagram. Doubles as a section index. Desktop only —
+     on mobile the same idea compresses into the mono eyebrow tags.
+     ============================================================ */
+  .rail{
+    display:none;
+  }
+  @media (min-width: 900px){
+    .rail{
+      display:block;
+      position: fixed;
+      left: 26px;
+      top: 0;
+      bottom: 0;
+      width: 40px;
+      z-index: 40;
+      pointer-events: none;
+    }
+    .rail-line{
+      position:absolute;
+      left: 50%;
+      top: 120px;
+      bottom: 120px;
+      width: 1px;
+      background: var(--line);
+    }
+    .rail-stop{
+      position:absolute;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 9px; height:9px;
+      border-radius: 50%;
+      background: var(--paper);
+      border: 1px solid var(--muted);
+      pointer-events:auto;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .2s, border-color .2s, transform .2s;
+    }
+    .rail-stop::before{
+      /* enlarge the clickable area without changing the visible dot size */
+      content:"";
+      position:absolute;
+      top:50%; left:50%;
+      width: 28px; height:28px;
+      transform: translate(-50%,-50%);
+    }
+    .rail-stop.active{
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: translate(-50%, -50%) scale(1.3);
+    }
+    .rail-label{
+      position:absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      white-space: nowrap;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      padding: 3px 7px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s;
+    }
+    /* Label shows on hover/focus only, never while simply active/scrolled-to.
+       This is the fix: a persistent label at scroll position was the thing
+       overlapping card content lower on the page. */
+    .rail-stop:hover .rail-label,
+    .rail-stop:focus-visible .rail-label{ opacity: 1; }
+  }
+
+  /* ============================================================
+     NAV
+     ============================================================ */
+  header{
+    position: sticky;
+    top:0;
+    z-index: 50;
+    background: rgba(243,240,233,0.92);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 16px var(--edge);
+  }
+  .mark{
+    font-family: var(--mono);
+    font-weight:700;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    text-decoration:none;
+    border: 1px solid var(--ink);
+    padding: 4px 8px;
+  }
+  .navlinks{
+    display:flex;
+    gap: 22px;
+    list-style:none;
+    margin:0; padding:0;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+  .navlinks a{ text-decoration:none; }
+  .navlinks a:hover{ color: var(--accent); }
+
+  /* ============================================================
+     SECTION SCAFFOLDING
+     ============================================================ */
+  section{ padding: 72px 0; position:relative; }
+  @media (min-width:900px){ section{ padding: 120px 0; } }
+
+  .eyebrow{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .eyebrow::before{
+    content:"";
+    width: 22px; height:1px;
+    background: var(--accent);
+    display:inline-block;
+  }
+
+  h1,h2,h3{ font-family: var(--serif); font-weight:600; margin:0; }
+  h2{ font-size: clamp(28px, 4.5vw, 42px); line-height:1.12; letter-spacing: -0.01em; }
+  h3{ font-size: clamp(20px, 2.6vw, 24px); line-height:1.25; }
+
+  p{ margin: 0 0 16px; color: var(--ink); }
+  .lede{ font-size: 18px; color: var(--muted); max-width: 640px; }
+
+  hr.rule{ border:none; border-top:1px solid var(--line); margin: 0; }
+
+  /* ============================================================
+     HERO
+     ============================================================ */
+  .hero{
+    padding-top: 60px;
+    min-height: 82vh;
+    display:flex;
+    align-items:center;
+  }
+  @media (min-width:900px){ .hero{ padding-top: 40px; } }
+  .hero h1{
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(34px, 6.4vw, 66px);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    max-width: 16ch;
+    margin-bottom: 26px;
+  }
+  .hero h1 em{
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent-ink);
+  }
+  .hero .lede{ font-size: 19px; max-width: 58ch; margin-bottom: 34px; }
+  .hero-cta{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 14px;
+    align-items:center;
+  }
+  .btn{
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-decoration:none;
+    padding: 12px 20px;
+    border: 1px solid var(--ink);
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition: background .15s, color .15s;
+  }
+  .btn.primary{ background: var(--ink); color: var(--paper); }
+  .btn.primary:hover{ background: var(--accent-ink); border-color: var(--accent-ink); }
+  .btn.ghost:hover{ background: var(--ink); color: var(--paper); }
+  .btn.placeholder{
+    border-style: dashed;
+    color: var(--muted);
+    border-color: var(--muted);
+  }
+  .btn.placeholder:hover{ background:none; color: var(--accent); border-color: var(--accent); }
+
+
+  /* ============================================================
+     CASE STUDY HERO
+     ============================================================ */
+  .cs-hero{ padding-top: 140px; padding-bottom: 0; }
+  @media (min-width:900px){ .cs-hero{ padding-top: 160px; } }
+  .cs-back{
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    color: var(--muted);
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom: 28px;
+  }
+  .cs-back:hover{ color: var(--accent-ink); }
+  .cs-title{
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(30px, 5.2vw, 54px);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    max-width: 20ch;
+    margin: 0 0 20px;
+  }
+  .cs-title em{ font-style: italic; font-weight:500; color: var(--accent-ink); }
+  .cs-tags{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom: 40px; }
+
+  .cs-cover{
+    width:100%;
+    aspect-ratio: 16/9;
+    overflow:hidden;
+    border: 1px solid var(--line);
+    background: var(--paper-deep);
+    margin-bottom: 0;
+  }
+  .cs-cover img{ width:100%; height:100%; object-fit:cover; }
+
+  /* ============================================================
+     META GRID (role, timeline, platform, etc.)
+     ============================================================ */
+  .cs-meta{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 24px;
+    padding: 44px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  @media (min-width:700px){ .cs-meta{ grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width:900px){ .cs-meta{ grid-template-columns: repeat(6, 1fr); gap: 24px; } }
+  .cs-meta-item span{
+    display:block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .cs-meta-item p{ font-size: 14px; margin:0; line-height:1.45; }
+
+  /* ============================================================
+     SECTION HEADERS + BODY COPY
+     ============================================================ */
+  .cs-section{ padding: 56px 0; border-bottom: 1px solid var(--line); }
+  .cs-section:last-of-type{ border-bottom:none; }
+  @media (min-width:900px){ .cs-section{ padding: 80px 0; } }
+  .cs-section-head{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 22px;
+  }
+  .cs-section h2{ font-size: clamp(24px, 3.4vw, 32px); margin-bottom: 22px; max-width: 22ch; }
+  .cs-body{ max-width: 68ch; }
+  .cs-body p{ color: var(--muted); font-size: 16px; }
+  .cs-body p strong{ color: var(--ink); font-weight:600; }
+  .cs-body blockquote{
+    margin: 28px 0;
+    padding-left: 20px;
+    border-left: 2px solid var(--accent);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 19px;
+    color: var(--ink);
+  }
+
+  /* ============================================================
+     FIGURES (image + mono caption)
+     ============================================================ */
+  .cs-figure{ margin: 36px 0; }
+  .cs-figure img{ width:100%; border:1px solid var(--line); background: var(--paper-deep); }
+  .cs-figure figcaption{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+  .cs-figure-pair{ display:grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width:700px){ .cs-figure-pair{ grid-template-columns: 1fr 1fr; } }
+
+  /* ============================================================
+     CARD GRIDS (constraints, who we spoke to, insights)
+     ============================================================ */
+  .cs-cards{ display:grid; grid-template-columns: 1fr; gap: 1px; background: var(--line); margin-top: 8px; }
+  @media (min-width:700px){ .cs-cards{ grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width:1000px){ .cs-cards.cols-4{ grid-template-columns: repeat(4, 1fr); } }
+  .cs-card{ background: var(--paper); padding: 26px 24px; }
+  .cs-card-num{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent-ink);
+    display:block;
+    margin-bottom: 10px;
+  }
+  .cs-card h4{
+    font-family: var(--serif);
+    font-weight:600;
+    font-size: 18px;
+    margin: 0 0 8px;
+  }
+  .cs-card p{ font-size: 14px; color: var(--muted); margin:0; }
+
+  /* ============================================================
+     STAT BLOCKS
+     ============================================================ */
+  .cs-stats{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); margin: 36px 0; }
+  @media (min-width:700px){ .cs-stats{ grid-template-columns: repeat(4, 1fr); } }
+  .cs-stat{ background: var(--paper); padding: 26px 20px; }
+  .cs-stat-num{
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(28px, 3.6vw, 38px);
+    color: var(--accent-ink);
+    display:block;
+    margin-bottom: 8px;
+  }
+  .cs-stat p{ font-size: 12.5px; color: var(--muted); margin:0; line-height:1.4; }
+
+  /* ============================================================
+     NUMBERED / ORDERED LIST (redesigned functions, principles)
+     ============================================================ */
+  .cs-list{ list-style:none; margin: 20px 0 0; padding:0; }
+  .cs-list li{
+    display:flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+    font-size: 15px;
+    color: var(--muted);
+  }
+  .cs-list li:last-child{ border-bottom: 1px solid var(--line); }
+  .cs-list li span.n{
+    font-family: var(--mono);
+    color: var(--accent-ink);
+    flex-shrink:0;
+    width: 24px;
+  }
+  .cs-list li strong{ color: var(--ink); }
+
+  /* ============================================================
+     OUTCOME STAT ROWS (Dastgyr outcomes)
+     ============================================================ */
+  .cs-outcomes{ display:flex; flex-direction:column; margin-top: 8px; }
+  .cs-outcome{ padding: 26px 0; border-top: 1px solid var(--line); }
+  .cs-outcome:last-child{ border-bottom: 1px solid var(--line); }
+  .cs-outcome h4{
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight:600;
+    margin: 0 0 8px;
+  }
+  .cs-outcome p{ font-size: 14.5px; color: var(--muted); margin:0; max-width: 64ch; }
+
+  /* ============================================================
+     VIDEO LINK CARD
+     ============================================================ */
+  .cs-video{
+    display:flex;
+    align-items:center;
+    gap: 20px;
+    border: 1px solid var(--line);
+    padding: 20px;
+    margin: 28px 0;
+    text-decoration:none;
+    color: inherit;
+  }
+  .cs-video:hover{ border-color: var(--accent); }
+  .cs-video-thumb{
+    width: 96px; height: 64px;
+    flex-shrink:0;
+    background: var(--ink);
+    color: var(--paper);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family: var(--mono);
+    font-size: 18px;
+  }
+  .cs-video-text span{
+    display:block;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color: var(--muted);
+    margin-bottom:4px;
+  }
+  .cs-video-text strong{ font-family: var(--serif); font-size: 17px; font-weight:600; }
+
+  /* ============================================================
+     PREV / NEXT CASE STUDY NAV
+     ============================================================ */
+  .cs-adjacent{
+    padding: 56px 0;
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .cs-adjacent a{
+    text-decoration:none;
+    color: inherit;
+  }
+  .cs-adjacent-label{
+    display:block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .cs-adjacent-title{
+    font-family: var(--serif);
+    font-weight:600;
+    font-size: clamp(18px, 2.2vw, 22px);
+    transition: color .15s;
+  }
+  .cs-adjacent a:hover .cs-adjacent-title{ color: var(--accent-ink); }
+  .cs-adjacent-next{ text-align: right; margin-left:auto; }
+
+  .pill{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    padding: 4px 8px;
+    display:inline-block;
+    width: fit-content;
+  }
+
+  /* ============================================================
+     CONTACT / FOOTER
+     ============================================================ */
+  footer{
+    background: var(--ink);
+    color: var(--paper);
+    padding: 70px 0 30px;
+  }
+  footer h2{ color: var(--paper); }
+  footer .lede{ color: rgba(243,240,233,0.65); }
+  .contact-links{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 14px;
+    margin-top: 30px;
+  }
+  footer .btn.primary{ background: var(--accent); border-color: var(--accent); color: var(--paper); }
+  footer .btn.primary:hover{ background: var(--paper); color: var(--ink); border-color: var(--paper); }
+  footer .btn.ghost{ border-color: rgba(243,240,233,0.4); }
+  footer .btn.ghost:hover{ background: var(--paper); color: var(--ink); }
+  footer .btn.placeholder{ border-color: rgba(243,240,233,0.3); color: rgba(243,240,233,0.55); }
+  footer .btn.placeholder:hover{ color: var(--accent); border-color: var(--accent); }
+
+  .foot-bottom{
+    margin-top: 70px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(243,240,233,0.15);
+    display:flex;
+    flex-direction: column;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(243,240,233,0.4);
+  }
+  @media (min-width:600px){
+    .foot-bottom{ flex-direction: row; justify-content: space-between; }
+  }
+
+</style>
+</head>
+<body>
+
+  <nav class="rail" aria-hidden="true">
+    <div class="rail-line"></div>
+    <a class="rail-stop" href="#top" data-for="top"><span class="rail-label">TOP</span></a>
+    <a class="rail-stop" href="#brief" data-for="brief"><span class="rail-label">BRIEF</span></a>
+    <a class="rail-stop" href="#research" data-for="research"><span class="rail-label">RESEARCH</span></a>
+    <a class="rail-stop" href="#the-os-concept" data-for="the-os-concept"><span class="rail-label">THE OS CONCEPT</span></a>
+    <a class="rail-stop" href="#atlas" data-for="atlas"><span class="rail-label">ATLAS</span></a>
+    <a class="rail-stop" href="#learnings" data-for="learnings"><span class="rail-label">LEARNINGS</span></a>
+  </nav>
+
+  <header>
+    <div class="nav">
+      <a class="mark" href="index.html">AA</a>
+      <ul class="navlinks">
+        <li><a href="index.html#work">Work</a></li>
+        <li><a href="index.html#play">Play</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+      </ul>
+    </div>
+  </header>
+  <main id="top">
+
+    <!-- ============================= HERO ============================= -->
+    <section class="cs-hero">
+      <div class="wrap">
+        <a class="cs-back" href="index.html#work">← Back to selected work</a>
+        <div class="eyebrow">Parsons School of Design × Microsoft · Spring 2024</div>
+        <h1 class="cs-title">Atlas: designing <em>AI-powered software</em> for people with ADHD</h1>
+        <div class="cs-tags">
+          <span class="pill">Design Strategy</span>
+          <span class="pill">Product Design</span>
+        </div>
+      </div>
+      <div class="wrap" style="margin-top:20px;">
+        <div class="cs-cover">
+          <img src="https://framerusercontent.com/images/60ByyvmU3MdmbPN56jeoqVYQWD0.webp?width=1600&height=1400" alt="Atlas project cover image.">
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= META ============================= -->
+    <section style="padding:0;">
+      <div class="wrap">
+        <p class="lede" style="margin:44px 0 0;">A student team's attempt at turning an open Microsoft brief into a deployable AI-powered Windows feature for people with ADHD, through research, co-creation, and a concept that almost reimagined the operating system entirely.</p>
+        <div class="cs-meta">
+          <div class="cs-meta-item"><span>Other team members</span><p>Alizeh Khan, Camila Bravo del Corral</p></div>
+          <div class="cs-meta-item"><span>My role</span><p>Team Lead, Research Lead, Strategy and Concept</p></div>
+          <div class="cs-meta-item"><span>Timeline</span><p>One semester (4 months, Spring 2024)</p></div>
+          <div class="cs-meta-item"><span>Client</span><p>Microsoft Inclusive Design Team</p></div>
+          <div class="cs-meta-item"><span>Deliverables</span><p>Strategy, Prototype, Sizzle Reel</p></div>
+          <div class="cs-meta-item"><span>Context</span><p>External Engagement Studio, Parsons MS SDM</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= BRIEF ============================= -->
+    <section id="brief" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">The brief</div>
+        <div class="cs-body">
+          <p>Every semester, the External Engagement Studio at Parsons School of Design pairs graduate students with an external partner and gives them a real brief to solve. In Spring 2024, that partner was Microsoft. The brief they brought was intentionally open.</p>
+          <blockquote>How might AI help protect the fundamental rights of underserved communities?</blockquote>
+          <p>We had a semester to find an answer worth presenting to the Microsoft Inclusive Design team. The openness of the brief was both the opportunity and the first design challenge. For an organization of Microsoft's scale, almost any direction could be justified. We needed to define our own constraints before we could do anything useful.</p>
+        </div>
+
+        <h3 style="margin-top:44px; margin-bottom:16px;">Defining the problem space</h3>
+        <div class="cs-body">
+          <p>The first thing we did was set constraints for ourselves. Microsoft's question could take a team in a hundred directions. We needed to narrow it in a way that was honest about our actual capacity as a student team working in New York with a semester's runway.</p>
+        </div>
+        <div class="cs-cards">
+          <div class="cs-card"><h4>Accessible audience</h4><p>We would only work with communities we could actually reach and speak to.</p></div>
+          <div class="cs-card"><h4>Microsoft adjacency</h4><p>The community had to be one Microsoft was either already working with, or prepared to engage with.</p></div>
+          <div class="cs-card"><h4>Data availability</h4><p>We needed to be able to validate quickly, without being slowed by limited access to data.</p></div>
+        </div>
+        <div class="cs-body" style="margin-top:28px;">
+          <p>With those constraints in place, we went into Microsoft's published materials. The breakthrough came through the Microsoft Inclusive Design for Cognition Guidebook, which contained a passage that shifted how we were thinking about the problem: rather than starting with a diagnosis or a community label, we should start by identifying the motivation. That reframe pointed us toward cognition as a domain, and as a team, we made the collective decision to focus there.</p>
+          <p>We started broad, framing our audience as people with focus-related disabilities, deliberately leaving room for the research to sharpen our direction before we committed to anything specific.</p>
+        </div>
+
+        <figure class="cs-figure">
+          <img src="https://framerusercontent.com/images/6k5RvdcMdm0MkKCv3g5xJ3VgZQ.png?width=1386&height=703" alt="Hand-made paper diagram mapping Microsoft's product and inclusion ecosystem.">
+          <figcaption>Above: mapping Microsoft's product and inclusion ecosystem to identify where focus and cognition overlapped with existing work.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============================= RESEARCH ============================= -->
+    <section id="research" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">Research</div>
+        <div class="cs-body">
+          <p>We divided the research by interview category rather than by individual. My category was healthcare and clinical experts: psychologists who work directly with people who have ADHD, and professionals who could tell us where the real boundaries of our project should sit, both ethically and practically.</p>
+          <p>I also developed the general interview framework that the full team adapted to their own interview categories. We kept our questions as open-ended as possible to give participants space to speak in their own terms rather than confirming our assumptions back to us.</p>
+        </div>
+
+        <h3 style="margin-top:44px; margin-bottom:20px;">Who we spoke to</h3>
+        <div class="cs-cards">
+          <div class="cs-card"><h4>11 people with ADHD</h4><p>Recruited through screener forms, support group meetings, and direct outreach. Focused on behaviors in school and workplace contexts.</p></div>
+          <div class="cs-card"><h4>6 medical professionals</h4><p>Psychologists and clinicians who work with ADHD patients, helping set important constraints early, including avoiding diagnostic tools and excluding minors.</p></div>
+          <div class="cs-card"><h4>2 research organizations</h4><p>Provided broader data context and helped validate findings from individual interviews.</p></div>
+          <div class="cs-card"><h4>6 technology experts</h4><p>Guided us on what was technically feasible within the Microsoft and Windows ecosystem, particularly around AI integration.</p></div>
+        </div>
+
+        <div class="cs-body" style="margin-top:28px;">
+          <p>The clinical conversations were particularly important early on. Experts advised us to avoid building anything that touched medical diagnosis, and to keep our audience to adults, not minors. Both constraints were legally and ethically grounded, and they helped us focus quickly. By the time we finished those early sessions, we had enough clarity to narrow our audience from "people with focus-related disabilities" specifically to people with ADHD.</p>
+        </div>
+
+        <div class="cs-figure-pair" style="margin-top:24px;">
+          <figure class="cs-figure" style="margin:0;">
+            <img src="https://framerusercontent.com/images/Djpectw5OMOEUAsYgRTjWwK4brQ.png?lossless=1&width=640&height=277" alt="System diagram used during research synthesis.">
+          </figure>
+          <figure class="cs-figure" style="margin:0;">
+            <img src="https://framerusercontent.com/images/6EmJQOnskhjWG8ibWrco1JFG2o.png?width=640&height=296" alt="Screenshot from research synthesis notes.">
+          </figure>
+        </div>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:10px;">Above: notes from audience interviews and expert sessions used to identify behavioral patterns and insight themes.</p>
+
+        <h3 style="margin-top:48px; margin-bottom:20px;">What we found</h3>
+        <div class="cs-body">
+          <p>The research produced three primary insights that shaped everything that followed. Because at least two members of the team also had ADHD, many of the findings resonated rather than surprised. The research confirmed and sharpened what we already had intuitions about, and gave us the evidence base to act on them.</p>
+        </div>
+        <div class="cs-cards">
+          <div class="cs-card"><h4>Personal challenges</h4><p>Needs were highly specific and individual. No two people described the same set of struggles in the same terms.</p></div>
+          <div class="cs-card"><h4>Individualized solutions</h4><p>Because challenges were unique, coping mechanisms were too. Any solution would need to flex to the individual, not normalize behavior.</p></div>
+          <div class="cs-card"><h4>Time management struggles</h4><p>Managing time, staying organized, and maintaining continuity across tasks was a universal thread across every conversation.</p></div>
+        </div>
+
+        <div class="cs-body" style="margin-top:28px;">
+          <p>The sharpest single finding came from desk research rather than interviews: the average person takes 24 minutes to recover from a single interruption, and office workers spend one to two hours per day just searching for files. For someone with ADHD, where context switching is already a primary source of frustration and lost productivity, those numbers take on a different weight entirely. That data point became an anchor for the concept work that followed.</p>
+        </div>
+
+        <div class="cs-stats">
+          <div class="cs-stat"><span class="cs-stat-num">300M+</span><p>People globally estimated to have ADHD</p></div>
+          <div class="cs-stat"><span class="cs-stat-num">24 min</span><p>Average recovery time from a single digital interruption</p></div>
+          <div class="cs-stat"><span class="cs-stat-num">1–2 hrs</span><p>Spent daily by workers just looking for files</p></div>
+          <div class="cs-stat"><span class="cs-stat-num">25+</span><p>Research participants including clinicians, users, and tech experts</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= REFRAME + CO-CREATION ============================= -->
+    <section id="reframe" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">Reframing the brief</div>
+        <div class="cs-body">
+          <p>With research in hand, we went back to Microsoft's original question and found that it was too broad to design against. We needed a question that pointed somewhere specific. The synthesis process, which I led, produced a reframed brief that we felt captured what the research was actually telling us.</p>
+          <blockquote>How might we create dynamic spaces for people with ADHD to regain productivity and well-being?</blockquote>
+          <p>The shift from "protect fundamental rights" to "create dynamic spaces" was deliberate. It moved us from a frame of deficit and protection toward a frame of agency and environment. The research had consistently shown that people with ADHD were not failing to be productive. They were succeeding at productivity in environments that were designed against how their brains work. The design opportunity was not to fix them. It was to fix the environment.</p>
+        </div>
+
+        <h3 style="margin-top:36px; margin-bottom:20px;">Design principles</h3>
+        <ul class="cs-list">
+          <li><span class="n">01</span><span><strong>Helpful.</strong> The solution should actively extend focus, not just remove barriers to it.</span></li>
+          <li><span class="n">02</span><span><strong>Simple.</strong> Intuitive and discoverable. A productivity tool that requires effort to learn is self-defeating.</span></li>
+          <li><span class="n">03</span><span><strong>Connected.</strong> Integrated with the larger Microsoft ecosystem rather than another siloed tool.</span></li>
+          <li><span class="n">04</span><span><strong>Accessible.</strong> Usable across generations and spectrums, not optimized for a narrow slice of users.</span></li>
+          <li><span class="n">05</span><span><strong>Unique.</strong> Tailored to the individual. Preferences, strengths, and weaknesses are the inputs, not defaults.</span></li>
+        </ul>
+
+        <h3 style="margin-top:48px; margin-bottom:16px;">Co-creation</h3>
+        <div class="cs-body">
+          <p>We knew that concept development could not happen only in the research team's heads. We needed the people we were designing for to be part of making the solution. I designed the co-creation methodology and led all the workshops.</p>
+          <p>For virtual sessions, I created a structured facilitation document with exercises and questions that walked participants through three stages: describing the problems they experience with Microsoft services and digital tools in general, imagining solutions they wanted to see, and then narrowing their thinking specifically to the Windows environment. That document became the backbone of a virtual whiteboard where participants worked in real time during video calls, drawing and writing responses directly into the shared space.</p>
+          <p>We also ran the same set of exercises asynchronously. I decided to take the co-creation prompts to Twitter, a platform I knew well enough to use effectively to reach a diverse and self-selecting audience. The approach worked. We received submissions from a range of people who were not accessible through our standard recruitment channels, and the ideas that came back through that channel directly informed the concept work that followed.</p>
+        </div>
+
+        <div class="cs-figure-pair">
+          <figure class="cs-figure" style="margin:0;">
+            <img src="https://framerusercontent.com/images/KH91SUqNcuf6ylVkrUHHfMGLptA.png?lossless=1&width=530&height=707" alt="Drawing submitted during a co-creation workshop.">
+          </figure>
+          <figure class="cs-figure" style="margin:0;">
+            <img src="https://framerusercontent.com/images/Objt9o2coDz5twvfRf3UNMCKOc.png?width=530&height=707" alt="Drawing submitted during a co-creation workshop.">
+          </figure>
+        </div>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:10px;">Above: a selection of drawings and ideas submitted during synchronous workshops and async Twitter co-creation sessions.</p>
+      </div>
+    </section>
+
+    <!-- ============================= THE CONCEPT THAT DID NOT MAKE IT ============================= -->
+    <section id="the-os-concept" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">The concept that did not make it</div>
+        <div class="cs-body">
+          <p>Before Atlas existed, there was a bigger idea.</p>
+          <p>One of the things I noticed early in the research process was that any digital solution we proposed would have to contend with software infrastructure that was not built for AI interaction. Copilot had only just launched. Windows, for all its evolution, was still fundamentally a file management and memory kernel system. The way you navigated a Windows desktop in 2024 was not conceptually different from how you would have in the mid-nineties.</p>
+          <p>My proposal was to rethink the operating system entirely. Not an accessibility layer on top of Windows, but a new piece of software infrastructure built accessibility-first and generalized second. An OS designed for how AI and humans might work together from the start, where the primary interaction layer was chat and voice rather than file management, where the system would remember context across tasks and surface the right tools proactively rather than waiting to be told what to open.</p>
+          <p>In practice, this meant a system where a user could set up distinct working environments for different contexts. The OS would know that Tuesday mornings meant a writing class and open the appropriate writing tools, reference windows, and focus modes automatically. For entertainment, a different cluster would surface. Memory would be contextual rather than flat. Search and browsing would be folded into the AI layer rather than living in a separate application. The underlying philosophy was that the interface should come to the user based on context, not require the user to navigate to it.</p>
+          <p>The idea was to build something accessibility-first and then generalize it outward. The mainstream benefits would be a byproduct of designing well for the edges first.</p>
+          <p>Microsoft asked us to pull it back. In our initial idea presentations, the client indicated they needed concepts grounded in what was buildable today, not a vision for a future OS. As the person who originated the concept, that was a real disappointment. But it was also a legitimate design challenge: how do you take the intent of a big idea and translate it into something deployable within existing constraints? That translation process is what produced Atlas.</p>
+        </div>
+
+        <figure class="cs-figure">
+          <img src="https://framerusercontent.com/images/hoRHfd2rUA4s2fCl21MLd61ILY.png?width=720&height=489" alt="Hand-made paper diagram of early low-fidelity explorations for the OS-level concept.">
+          <figcaption>Above: early low-fidelity explorations for the original OS-level concept, before Microsoft asked us to reframe within the current Windows ecosystem.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============================= ATLAS ============================= -->
+    <section id="atlas" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">Atlas</div>
+        <div class="cs-body">
+          <p>Atlas is an AI-enabled widget embedded within Windows 11, built on top of Copilot rather than replacing it. It addresses the core ADHD productivity challenge we had identified throughout research: context switching. The inability to transition between tasks without losing momentum, to pick up a thread after an interruption, to maintain organized, focused digital environments across a fragmented workday.</p>
+          <p>The widget has two primary components.</p>
+        </div>
+
+        <h3 style="margin-top:36px; margin-bottom:16px;">Work clusters</h3>
+        <div class="cs-body">
+          <p>Work Clusters are saved desktop configurations tied to specific tasks or contexts. A user sets up a cluster for a writing project, selecting the applications, windows, and Microsoft 365 services relevant to that work, and saves it. The next time they return to that task, the cluster restores that environment instantly. No hunting for files. No rebuilding context from memory. The digital space picks up where the person left off.</p>
+          <p>The concept grew directly from the original OS working-zones idea. Where the OS proposal would have made contextual environments a fundamental layer of the system, Work Clusters bring the same intent into a deployable widget format that can live inside the existing Windows 11 architecture today.</p>
+        </div>
+
+        <h3 style="margin-top:36px; margin-bottom:16px;">Task and calendar aggregation</h3>
+        <div class="cs-body">
+          <p>The widget also pulls together tasks, calendar invites, and meeting data from across Microsoft 365 services through a secure login, collating them into a single view. Copilot can assist within a Work Cluster's focus mode, helping users complete tasks and stay on track without having to leave the environment to look for information elsewhere.</p>
+        </div>
+
+        <figure class="cs-figure">
+          <img src="https://framerusercontent.com/images/ElylVu9vp2VuYMF5Mf1RUXTWQts.png?width=1024&height=576" alt="Atlas widget concept shown in context inside a Windows 11 desktop environment.">
+          <figcaption>Above: Atlas shown in context inside a Windows 11 desktop environment.</figcaption>
+        </figure>
+
+        <a class="cs-video" href="https://www.youtube.com/watch?v=ZJWbV4X8I80" target="_blank" rel="noopener">
+          <div class="cs-video-thumb">▶</div>
+          <div class="cs-video-text">
+            <span>Watch</span>
+            <strong>Sizzle reel used in the final presentation to Microsoft</strong>
+          </div>
+        </a>
+
+        <h3 style="margin-top:36px; margin-bottom:16px;">Wireframes and design handoff</h3>
+        <div class="cs-body">
+          <p>I produced the initial wireframes for the widget, keeping the visual language of Windows 11 intact and using native Windows 11 components throughout. The decision to stay within the existing design system was intentional: it made the concept feel immediately credible as something that could actually ship, rather than a student project imagining a different product. A teammate completed the missing screens and made refinements to the final version where I had run out of time, but the structure and component decisions in the wireframes carried through to the final designs.</p>
+        </div>
+
+        <div class="cs-figure-pair">
+          <figure class="cs-figure" style="margin:0;">
+            <img src="https://framerusercontent.com/images/6yvshZcXSTbyAWZxGJRumJDTTMk.png?width=1680&height=1680" alt="System diagram for the Atlas widget.">
+          </figure>
+          <figure class="cs-figure" style="margin:0;">
+            <img src="https://framerusercontent.com/images/uiLQI9wGp7HrRtg03mIW4xoN2B4.png?width=852&height=1024" alt="High-level screenshot of the Figma file showing initial Atlas wireframes.">
+          </figure>
+        </div>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:10px;">Above: initial wireframes that formed the structural foundation for the final Atlas designs.</p>
+      </div>
+    </section>
+
+    <!-- ============================= VALIDATION + LEARNINGS ============================= -->
+    <section id="learnings" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">Validation and response</div>
+        <div class="cs-body">
+          <p>We presented Atlas to the Microsoft Inclusive Design team at the end of the semester. The Inclusive Design team was the client throughout, so their response was the validation we had been working toward. They told us that Atlas addressed all the design parameters they had been looking for in an initial concept, and that it was something they could genuinely envision as a future Microsoft feature. To the extent that anything moves forward from a student project into a large organization's development pipeline, that was the strongest possible response we could have received.</p>
+          <p>Whether any of the specific ideas in Atlas find their way into a future version of Windows, I do not know. But the concept was received as credible, feasible, and grounded in real need. For a semester-long student engagement, that outcome felt like the right measure of success.</p>
+        </div>
+
+        <h3 style="margin-top:44px; margin-bottom:16px;">My learnings</h3>
+        <div class="cs-body">
+          <p>Atlas was the first project where I applied strategic design methods at full scale on a real brief with a real client. A few things stayed with me after it was done.</p>
+          <p>The most important was learning how to reframe quickly without losing ambition. The OS concept had to go, and that required letting go of something I genuinely believed in, in order to produce something that could actually be acted on. That tension, between the idea that should exist and the idea that can exist right now, is one of the core practical problems of strategic design work.</p>
+          <p>The Twitter co-creation was also something I would do again. Unconventional methods for reaching diverse research participants often work better than conventional ones, especially when the timeline is short and the recruitment pipeline is narrow. Knowing your tools well enough to repurpose them is worth something.</p>
+          <p>And finally: designing for edges first generalizes better than designing for the middle and accommodating edges later. Atlas was built for people with ADHD. Most of what it does would be useful for anyone who works across multiple contexts on a single machine. That is not a coincidence.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= ADJACENT CASE STUDY ============================= -->
+    <section style="padding:0;">
+      <div class="wrap">
+        <hr class="rule">
+        <div class="cs-adjacent">
+          <a href="dastgyr.html">
+            <span class="cs-adjacent-label">Previous case study</span>
+            <span class="cs-adjacent-title">← Dastgyr Technologies</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================= FOOTER / CONTACT ============================= -->
+  <footer id="contact">
+    <div class="wrap">
+      <div class="eyebrow" style="color:var(--accent);">Get in touch</div>
+      <h2 style="max-width:16ch;">Let's talk about a role, a project, or a problem worth taking apart.</h2>
+      <p class="lede">For the full picture, ask for a résumé or see LinkedIn.</p>
+      <div class="contact-links">
+        <a class="btn primary" href="#" title="Placeholder — mailto link">[Email — placeholder]</a>
+        <a class="btn ghost" href="https://www.linkedin.com/in/anispunjwani">LinkedIn</a>
+        <a class="btn ghost" href="https://www.instagram.com/anispunjwani">Instagram</a>
+      </div>
+
+      <div class="foot-bottom">
+        <span>© 2026 Anis Amir. All rights reserved.</span>
+        <span>You've reached the bottom. There's nothing else down here.</span>
+      </div>
+    </div>
+  </footer>
+
+
+  <script>
+    // Wayfinding rail: dot positions are computed from each section's real
+    // offset in the document (as a share of total scrollable height), then
+    // mapped onto the rail track. Recomputed on load and resize since section
+    // heights change with viewport width and placeholder content.
+    (function(){
+      var stops = document.querySelectorAll('.rail-stop');
+      var track = document.querySelector('.rail-line');
+      if(!stops.length || !track) return;
+
+      var sections = Array.prototype.map.call(stops, function(s){
+        return document.getElementById(s.getAttribute('data-for'));
+      });
+
+      function layout(){
+        // .rail-line and .rail-stop are both fixed-position, so their
+        // coordinates are already viewport-relative. No scrollY math needed,
+        // that was the bug causing dots to fall short of the track's bottom.
+        var trackRect = track.getBoundingClientRect();
+        var trackTop = trackRect.top;
+        var trackHeight = track.offsetHeight;
+
+        var firstTop = sections[0] ? sections[0].offsetTop : 0;
+        var lastSection = sections[sections.length - 1];
+        var lastTop = lastSection ? lastSection.offsetTop : firstTop + 1;
+        var span = (lastTop - firstTop) || 1;
+
+        sections.forEach(function(sec, i){
+          if(!sec) return;
+          var ratio = (sec.offsetTop - firstTop) / span;
+          ratio = Math.max(0, Math.min(1, ratio));
+          stops[i].style.top = (trackTop + ratio * trackHeight) + 'px';
+        });
+      }
+
+      function onScroll(){
+        var atBottom = (window.scrollY + window.innerHeight) >= (document.body.scrollHeight - 2);
+        var pos = window.scrollY + window.innerHeight * 0.3;
+        var activeIndex = 0;
+        sections.forEach(function(sec, i){
+          if(sec && sec.offsetTop <= pos) activeIndex = i;
+        });
+        // The lookahead above can mathematically fall short of the final
+        // section if it sits deep inside a tall footer, so force the last
+        // dot active once the page is actually scrolled to the bottom.
+        if(atBottom) activeIndex = sections.length - 1;
+        stops.forEach(function(s, i){
+          s.classList.toggle('active', i === activeIndex);
+        });
+      }
+
+      layout();
+      onScroll();
+      window.addEventListener('resize', layout);
+      document.addEventListener('scroll', onScroll, { passive: true });
+    })();
+  </script>
+
+
+</body>
+</html>
