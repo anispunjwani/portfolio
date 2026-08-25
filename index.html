@@ -426,6 +426,8 @@
     color: var(--muted);
     line-height:1.4;
   }
+  .play-thumb.has-img{ padding:0; overflow:hidden; background-image:none; }
+  .play-thumb.has-img img{ width:100%; height:100%; object-fit:cover; display:block; }
 
   /* ============================================================
      ABOUT
@@ -658,7 +660,7 @@
       <div class="wrap">
         <div class="work-head">
           <div class="eyebrow">Further proof of work</div>
-          <h2>Referenced, not written up.</h2>
+          <h2>Real work, briefly noted.</h2>
           <p class="lede">Live products, publications, and sites rather than full case studies. Included for breadth. Full work history is below, or ask for a CV.</p>
         </div>
 
@@ -676,7 +678,7 @@
 
           <div class="proof-row">
             <span class="proof-org">Optera Digital</span>
-            <p class="proof-desc">Designed enterprise energy dashboards for <a href="https://web.archive.org/web/20240916183232/https://www.aug-e.io/en" target="_blank" rel="noopener">Aug.E</a> and developed UI and game writing for <a href="https://www.raptrgames.com/" target="_blank" rel="noopener">Raptr Games</a>, alongside a full concept and brand built for a healthcare RFP response.</p>
+            <p class="proof-desc">Designed enterprise energy dashboards for <a href="https://web.archive.org/web/20240916183232/https://www.aug-e.io/en" target="_blank" rel="noopener">Aug.E</a> and developed UI and game writing for <a href="https://www.raptrgames.com/" target="_blank" rel="noopener">Raptr Games</a>, alongside a <a href="perioperative.html">full concept and brand built for a healthcare RFP response</a>.</p>
           </div>
 
           <div class="proof-row">
@@ -712,12 +714,14 @@
           <div class="play-block">
             <span class="proof-org">Photography</span>
             <p class="proof-desc" style="margin-bottom:18px;">Photography from hikes, cities, and everyday wandering, kept separate from the work above.</p>
-            <div class="play-thumbs">
-              <div class="play-thumb"><span>[PLACEHOLDER<br>Photo 01]</span></div>
-              <div class="play-thumb"><span>[PLACEHOLDER<br>Photo 02]</span></div>
-              <div class="play-thumb"><span>[PLACEHOLDER<br>Photo 03]</span></div>
-            </div>
-            <span class="status-soon">Coming soon</span>
+            <a href="photography.html" style="text-decoration:none; display:contents;">
+              <div class="play-thumbs">
+                <div class="play-thumb has-img"><img src="images/route-no-20/9.webp" alt="Three men sitting on top of a bus, backlit against the sky."></div>
+                <div class="play-thumb has-img"><img src="images/route-no-20/2.webp" alt="An elderly passenger in a white kurta and cap, seated on the bus."></div>
+                <div class="play-thumb has-img"><img src="images/route-no-20/6.webp" alt="The number 19.D bus parked in a Karachi street market."></div>
+              </div>
+            </a>
+            <a class="case-arrow" href="photography.html" style="display:inline-block; margin-top:14px;">View galleries →</a>
           </div>
         </div>
       </div>
