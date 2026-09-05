@@ -168,13 +168,14 @@
     padding: 16px var(--edge);
   }
   .mark{
-    font-family: var(--mono);
-    font-weight:700;
-    font-size: 14px;
-    letter-spacing: 0.02em;
+    display:inline-flex;
+    align-items:center;
     text-decoration:none;
-    border: 1px solid var(--ink);
-    padding: 4px 8px;
+  }
+  .mark img{
+    height: 26px;
+    width: auto;
+    display:block;
   }
   .navlinks{
     display:flex;
@@ -588,7 +589,7 @@
 
   <header>
     <div class="nav">
-      <a class="mark" href="index.html">AA</a>
+      <a class="mark" href="index.html"><img src="images/aa-logo.png" alt="Anis Amir"></a>
       <ul class="navlinks">
         <li><a href="index.html#work">Work</a></li>
         <li><a href="index.html#play">Play</a></li>
@@ -836,8 +837,12 @@
         <hr class="rule">
         <div class="cs-adjacent">
           <a href="atlas.html">
+            <span class="cs-adjacent-label">Previous case study</span>
+            <span class="cs-adjacent-title">← Atlas: Parsons × Microsoft</span>
+          </a>
+          <a class="cs-adjacent-next" href="perioperative.html">
             <span class="cs-adjacent-label">Next case study</span>
-            <span class="cs-adjacent-title">Atlas: Parsons × Microsoft →</span>
+            <span class="cs-adjacent-title">Perioperative →</span>
           </a>
         </div>
       </div>

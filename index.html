@@ -168,13 +168,14 @@
     padding: 16px var(--edge);
   }
   .mark{
-    font-family: var(--mono);
-    font-weight:700;
-    font-size: 14px;
-    letter-spacing: 0.02em;
+    display:inline-flex;
+    align-items:center;
     text-decoration:none;
-    border: 1px solid var(--ink);
-    padding: 4px 8px;
+  }
+  .mark img{
+    height: 26px;
+    width: auto;
+    display:block;
   }
   .navlinks{
     display:flex;
@@ -211,6 +212,7 @@
     background: var(--accent);
     display:inline-block;
   }
+  .eyebrow.no-line::before{ content:none; width:0; }
 
   h1,h2,h3{ font-family: var(--serif); font-weight:600; margin:0; }
   h2{ font-size: clamp(28px, 4.5vw, 42px); line-height:1.12; letter-spacing: -0.01em; }
@@ -295,7 +297,7 @@
   }
   @media (min-width:900px){
     .case{
-      grid-template-columns: 0.9fr 1.5fr 0.8fr;
+      grid-template-columns: 0.9fr 1.7fr;
       gap: 40px;
       align-items:center;
       padding: 44px 0;
@@ -351,7 +353,7 @@
   .case-title:hover{ color: var(--accent-ink); }
   .case-desc{ color: var(--muted); font-size: 14.5px; margin:0; }
 
-  .case-meta{ display:flex; flex-direction:column; gap: 10px; }
+  .case-pills{ display:flex; flex-wrap:wrap; gap: 8px; margin-bottom: 14px; }
   .pill{
     font-family: var(--mono);
     font-size: 10.5px;
@@ -370,6 +372,7 @@
     text-transform: uppercase;
     color: var(--muted);
   }
+  .case-cta{ margin-top: 18px; }
   .case-arrow{ font-family: var(--mono); font-size:13px; color: var(--muted); text-decoration:none; }
   .case-arrow:hover{ color: var(--accent-ink); }
   .case-also{ font-size: 13px; color: var(--muted); margin: 10px 0 0; }
@@ -403,6 +406,8 @@
     gap: 56px;
   }
   @media (min-width:900px){ .play-grid{ grid-template-columns: 1fr 1fr; gap: 64px; } }
+  .play-grid.single{ grid-template-columns: 1fr !important; }
+  .play-grid.single .play-block{ max-width: 480px; }
   .play-block .status-soon{ display:block; margin-top: 14px; }
   .play-thumbs{
     display:grid;
@@ -559,7 +564,7 @@
 
   <header>
     <div class="nav">
-      <a class="mark" href="#hero">AA</a>
+      <a class="mark" href="#hero"><img src="images/aa-logo.png" alt="Anis Amir"></a>
       <ul class="navlinks">
         <li><a href="#work">Work</a></li>
         <li><a href="#play">Play</a></li>
@@ -576,12 +581,11 @@
     <!-- ============================= HERO ============================= -->
     <section id="hero" class="hero">
       <div class="wrap">
-        <div class="eyebrow">Anis Amir — Design Strategy, Product, Systems</div>
+        <div class="eyebrow no-line">Anis Amir — Design, Strategy, Product, Systems</div>
         <h1>I work on problems that sit between <em>systems, people, and decisions.</em></h1>
-        <p class="lede">A design-led approach to strategy, systems, and execution. Seven years across product, UX, operations, and consulting, spent learning to see the hidden logic in a problem before jumping to solutions: what can go wrong, where complexity starts creeping in, and when simplicity is the smarter move.</p>
+        <p class="lede">I take a design-led approach to strategy, systems, and execution, helping organizations understand how things really work, where they break, and what needs to change. Across product, UX, operations, and consulting, I move between research, decisions, people, and execution while keeping sight of the larger system. I'm drawn to the hidden logic: where complexity creeps in, what can go wrong, and when simplicity is the smarter move. My work is about getting to what is true, finding the clearest path forward, and staying with an idea until it actually works.</p>
         <div class="hero-cta">
           <a class="btn primary" href="#work">View selected work →</a>
-          <a class="btn placeholder" href="#" title="Placeholder — link to PDF résumé">[Résumé — placeholder link]</a>
         </div>
       </div>
     </section>
@@ -593,11 +597,27 @@
       <div class="wrap">
         <div class="work-head">
           <div class="eyebrow">Selected work</div>
-          <h2>A partial record of the places and problems I've worked on.</h2>
-          <p class="lede">Two projects are written up in full below. The rest are in progress — ask for a walkthrough or a CV in the meantime.</p>
+          <h2>A collection of the problems I have worked on in the past.</h2>
         </div>
 
         <div class="case-list">
+
+          <!-- Real case study: Atlas -->
+          <div class="case">
+            <a class="case-thumb" href="atlas.html">
+              <img src="images/atlas-cover.png" alt="Atlas logo mark and wordmark on a purple gradient background.">
+            </a>
+            <div>
+              <span class="case-tag">Parsons × Microsoft · Spring 2024</span>
+              <div class="case-pills">
+                <span class="pill">Design Strategy</span>
+                <span class="pill">Product Design</span>
+              </div>
+              <a class="case-title" href="atlas.html">Atlas: designing for context switching, not just ADHD</a>
+              <p class="case-desc">An open Microsoft brief on AI and underserved communities, narrowed through research into a deployable Windows 11 concept, validated by Microsoft's Inclusive Design team.</p>
+              <a class="btn primary case-cta" href="atlas.html">Read the case study →</a>
+            </div>
+          </div>
 
           <!-- Real case study: Dastgyr -->
           <div class="case">
@@ -606,31 +626,14 @@
             </a>
             <div>
               <span class="case-tag">Dastgyr Technologies · Oct 2022 – Jul 2023</span>
+              <div class="case-pills">
+                <span class="pill">Product Design</span>
+                <span class="pill">Service Design</span>
+              </div>
               <a class="case-title" href="dastgyr.html">Building a logistics ecosystem from the inside out</a>
               <p class="case-desc">A fragmented, third-party-dependent delivery operation rebuilt into a unified, in-house system spanning drivers, warehouses, and management. Cash reconciliation time dropped 98 percent.</p>
               <p class="case-also">Also see: <a href="https://www.behance.net/gallery/194579985/Dastgyr-Global-Corporate-Rebranding">corporate rebrand</a> · <a href="https://dastgyr.com/">dastgyr.com</a></p>
-            </div>
-            <div class="case-meta">
-              <span class="pill">Product Design</span>
-              <span class="pill">Service Design</span>
-              <a class="case-arrow" href="dastgyr.html">Read the case study →</a>
-            </div>
-          </div>
-
-          <!-- Real case study: Atlas -->
-          <div class="case">
-            <a class="case-thumb" href="atlas.html">
-              <img src="https://framerusercontent.com/images/ElylVu9vp2VuYMF5Mf1RUXTWQts.png?width=1024&height=576" alt="Atlas widget concept shown in context inside a Windows 11 desktop environment.">
-            </a>
-            <div>
-              <span class="case-tag">Parsons × Microsoft · Spring 2024</span>
-              <a class="case-title" href="atlas.html">Atlas: designing for context switching, not just ADHD</a>
-              <p class="case-desc">An open Microsoft brief on AI and underserved communities, narrowed through research into a deployable Windows 11 concept, validated by Microsoft's Inclusive Design team.</p>
-            </div>
-            <div class="case-meta">
-              <span class="pill">Design Strategy</span>
-              <span class="pill">Product Design</span>
-              <a class="case-arrow" href="atlas.html">Read the case study →</a>
+              <a class="btn primary case-cta" href="dastgyr.html">Read the case study →</a>
             </div>
           </div>
 
@@ -641,13 +644,13 @@
             </a>
             <div>
               <span class="case-tag">Optera Digital · Aug 2021 – Oct 2022</span>
+              <div class="case-pills">
+                <span class="pill">Product Design</span>
+                <span class="pill">Brand Identity</span>
+              </div>
               <a class="case-title" href="perioperative.html">Designing Perioperative: a patient-facing care journey app</a>
               <p class="case-desc">A two-week proof of concept for a plastic surgery clinical chain, consolidating a fragmented, paper-based care process into a single patient app and brand, built end to end.</p>
-            </div>
-            <div class="case-meta">
-              <span class="pill">Product Design</span>
-              <span class="pill">Brand Identity</span>
-              <a class="case-arrow" href="perioperative.html">Read the case study →</a>
+              <a class="btn primary case-cta" href="perioperative.html">Read the case study →</a>
             </div>
           </div>
 
@@ -660,7 +663,7 @@
       <div class="wrap">
         <div class="work-head">
           <div class="eyebrow">Further proof of work</div>
-          <h2>Real work, briefly noted.</h2>
+          <h2>Other work.</h2>
           <p class="lede">Live products, publications, and sites rather than full case studies. Included for breadth. Full work history is below, or ask for a CV.</p>
         </div>
 
@@ -695,11 +698,12 @@
       <div class="wrap">
         <div class="work-head">
           <div class="eyebrow">Play</div>
-          <h2>Work that doesn't fit a case study format.</h2>
-          <p class="lede">Experiments, side builds, and photography. This section is being built out, structure is ready, content is coming.</p>
+          <h2>Experiments and Side Quests</h2>
+          <p class="lede">Non-work things that I like to do for fun.</p>
         </div>
 
-        <div class="play-grid">
+        <div class="play-grid single">
+          <!-- Experimental work: hidden for now, will add back once there's real content.
           <div class="play-block">
             <span class="proof-org">Experimental work</span>
             <p class="proof-desc" style="margin-bottom:18px;">Smaller, faster projects that don't need the full weight of a case study: prototypes, tools, one-off builds.</p>
@@ -710,6 +714,7 @@
             </div>
             <span class="status-soon">Coming soon</span>
           </div>
+          -->
 
           <div class="play-block">
             <span class="proof-org">Photography</span>
@@ -822,9 +827,8 @@
     <div class="wrap">
       <div class="eyebrow" style="color:var(--accent);">Get in touch</div>
       <h2 style="max-width:16ch;">Let's talk about a role, a project, or a problem worth taking apart.</h2>
-      <p class="lede">For the full picture, ask for a résumé or see LinkedIn.</p>
       <div class="contact-links">
-        <a class="btn primary" href="#" title="Placeholder — mailto link">[Email — placeholder]</a>
+        <a class="btn primary" href="mailto:anis.punjwani@gmail.com">anis.punjwani@gmail.com</a>
         <a class="btn ghost" href="https://www.linkedin.com/in/anispunjwani">LinkedIn</a>
         <a class="btn ghost" href="https://www.instagram.com/anispunjwani">Instagram</a>
       </div>

@@ -3,629 +3,1139 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Perioperative — Case Study</title>
+<title>Perioperative — Anis Amir</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --ink: #1a1a18;
-    --ink-muted: #5a5a55;
-    --ink-faint: #a0a09a;
-    --surface: #faf9f6;
-    --surface-2: #f2f1ed;
-    --surface-3: #e8e7e2;
-    --accent: #2d5fa8;
-    --accent-2: #4a9e6b;
-    --accent-light: #edf1f8;
-    --border: rgba(26,26,24,0.1);
-    --serif: 'Instrument Serif', Georgia, serif;
-    --sans: 'DM Sans', system-ui, sans-serif;
+
+  /* ============================================================
+     TOKENS
+     Palette: warm paper + near-black ink + a single signal-blue
+     accent, referencing engineering redlines and transit-line
+     diagrams rather than the usual cream/terracotta pairing.
+     Type: Fraunces (voice) / Space Grotesk (structure) /
+     Space Mono (data, labels, wayfinding).
+     ============================================================ */
+
+  :root{
+    --paper: #F3F0E9;
+    --paper-deep: #EAE5D8;
+    --ink: #1B1B18;
+    --muted: #66635A;
+    --line: #D6D0BF;
+    --accent: #2452A6;
+    --accent-ink: #16357C;
+    --accent-soft: rgba(36,82,166,0.08);
+    --placeholder-bg: repeating-linear-gradient(135deg, rgba(27,27,24,0.04), rgba(27,27,24,0.04) 6px, transparent 6px, transparent 12px);
+
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Space Grotesk', -apple-system, sans-serif;
+    --mono: 'Space Mono', 'Courier New', monospace;
+
+    --edge: 20px;
+    --rail-w: 0px;
   }
-  body {
-    font-family: var(--sans);
-    background: var(--surface);
+
+  @media (min-width: 900px){
+    :root{ --edge: 84px; --rail-w: 64px; }
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--paper);
     color: var(--ink);
+    font-family: var(--sans);
     font-size: 16px;
-    line-height: 1.7;
-    max-width: 780px;
-    margin: 0 auto;
-    padding: 4rem 2rem 8rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
   }
-  .label {
+  ::selection{ background: var(--accent); color: var(--paper); }
+  a{ color: inherit; }
+  img{ max-width:100%; display:block; }
+
+  .wrap{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-left: var(--edge);
+    padding-right: var(--edge);
+  }
+
+  /* focus visibility, kept even though palette is muted */
+  a:focus-visible, button:focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+
+  /* ============================================================
+     WAYFINDING RAIL (signature element)
+     A fixed vertical line with station dots, echoing a transit
+     route diagram. Doubles as a section index. Desktop only —
+     on mobile the same idea compresses into the mono eyebrow tags.
+     ============================================================ */
+  .rail{
+    display:none;
+  }
+  @media (min-width: 900px){
+    .rail{
+      display:block;
+      position: fixed;
+      left: 26px;
+      top: 0;
+      bottom: 0;
+      width: 40px;
+      z-index: 40;
+      pointer-events: none;
+    }
+    .rail-line{
+      position:absolute;
+      left: 50%;
+      top: 120px;
+      bottom: 120px;
+      width: 1px;
+      background: var(--line);
+    }
+    .rail-stop{
+      position:absolute;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 9px; height:9px;
+      border-radius: 50%;
+      background: var(--paper);
+      border: 1px solid var(--muted);
+      pointer-events:auto;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .2s, border-color .2s, transform .2s;
+    }
+    .rail-stop::before{
+      /* enlarge the clickable area without changing the visible dot size */
+      content:"";
+      position:absolute;
+      top:50%; left:50%;
+      width: 28px; height:28px;
+      transform: translate(-50%,-50%);
+    }
+    .rail-stop.active{
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: translate(-50%, -50%) scale(1.3);
+    }
+    .rail-label{
+      position:absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      white-space: nowrap;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      padding: 3px 7px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s;
+    }
+    /* Label shows on hover/focus only, never while simply active/scrolled-to.
+       This is the fix: a persistent label at scroll position was the thing
+       overlapping card content lower on the page. */
+    .rail-stop:hover .rail-label,
+    .rail-stop:focus-visible .rail-label{ opacity: 1; }
+  }
+
+  /* ============================================================
+     NAV
+     ============================================================ */
+  header{
+    position: sticky;
+    top:0;
+    z-index: 50;
+    background: rgba(243,240,233,0.92);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 16px var(--edge);
+  }
+  .mark{
+    display:inline-flex;
+    align-items:center;
+    text-decoration:none;
+  }
+  .mark img{
+    height: 26px;
+    width: auto;
+    display:block;
+  }
+  .navlinks{
+    display:flex;
+    gap: 22px;
+    list-style:none;
+    margin:0; padding:0;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+  .navlinks a{ text-decoration:none; }
+  .navlinks a:hover{ color: var(--accent); }
+
+  /* ============================================================
+     SECTION SCAFFOLDING
+     ============================================================ */
+  section{ padding: 72px 0; position:relative; }
+  @media (min-width:900px){ section{ padding: 120px 0; } }
+
+  .eyebrow{
+    font-family: var(--mono);
     font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--accent);
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    margin-bottom: 18px;
   }
-  h1 {
+  .eyebrow::before{
+    content:"";
+    width: 22px; height:1px;
+    background: var(--accent);
+    display:inline-block;
+  }
+
+  h1,h2,h3{ font-family: var(--serif); font-weight:600; margin:0; }
+  h2{ font-size: clamp(28px, 4.5vw, 42px); line-height:1.12; letter-spacing: -0.01em; }
+  h3{ font-size: clamp(20px, 2.6vw, 24px); line-height:1.25; }
+
+  p{ margin: 0 0 16px; color: var(--ink); }
+  .lede{ font-size: 18px; color: var(--muted); max-width: 640px; }
+
+  hr.rule{ border:none; border-top:1px solid var(--line); margin: 0; }
+
+  /* ============================================================
+     HERO
+     ============================================================ */
+  .hero{
+    padding-top: 60px;
+    min-height: 82vh;
+    display:flex;
+    align-items:center;
+  }
+  @media (min-width:900px){ .hero{ padding-top: 40px; } }
+  .hero h1{
     font-family: var(--serif);
-    font-size: clamp(2.4rem, 5vw, 3.6rem);
-    font-weight: 400;
+    font-weight: 500;
+    font-size: clamp(34px, 6.4vw, 66px);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    max-width: 16ch;
+    margin-bottom: 26px;
+  }
+  .hero h1 em{
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent-ink);
+  }
+  .hero .lede{ font-size: 19px; max-width: 58ch; margin-bottom: 34px; }
+  .hero-cta{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 14px;
+    align-items:center;
+  }
+  .btn{
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-decoration:none;
+    padding: 12px 20px;
+    border: 1px solid var(--ink);
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition: background .15s, color .15s;
+  }
+  .btn.primary{ background: var(--ink); color: var(--paper); }
+  .btn.primary:hover{ background: var(--accent-ink); border-color: var(--accent-ink); }
+  .btn.ghost:hover{ background: var(--ink); color: var(--paper); }
+  .btn.placeholder{
+    border-style: dashed;
+    color: var(--muted);
+    border-color: var(--muted);
+  }
+  .btn.placeholder:hover{ background:none; color: var(--accent); border-color: var(--accent); }
+
+
+  /* ============================================================
+     CASE STUDY HERO
+     ============================================================ */
+  .cs-hero{ padding-top: 140px; padding-bottom: 0; }
+  @media (min-width:900px){ .cs-hero{ padding-top: 160px; } }
+  .cs-back{
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    color: var(--muted);
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom: 28px;
+  }
+  .cs-back:hover{ color: var(--accent-ink); }
+  .cs-title{
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(30px, 5.2vw, 54px);
     line-height: 1.1;
-    margin: 1rem 0 0.5rem;
-    color: var(--ink);
+    letter-spacing: -0.015em;
+    max-width: 20ch;
+    margin: 0 0 20px;
   }
-  h1 em { font-style: italic; color: var(--accent); }
-  .subtitle {
-    font-size: 1.05rem;
-    color: var(--ink-muted);
-    max-width: 580px;
-    margin-bottom: 2.5rem;
-    line-height: 1.6;
+  .cs-title em{ font-style: italic; font-weight:500; color: var(--accent-ink); }
+  .cs-tags{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom: 40px; }
+
+  .cs-cover{
+    width:100%;
+    aspect-ratio: 16/9;
+    overflow:hidden;
+    border: 1px solid var(--line);
+    background: var(--paper-deep);
+    margin-bottom: 0;
   }
-  .meta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    padding: 1.25rem 0;
-    margin-bottom: 3.5rem;
+  .cs-cover img{ width:100%; height:100%; object-fit:cover; }
+
+  /* ============================================================
+     META GRID (role, timeline, platform, etc.)
+     ============================================================ */
+  .cs-meta{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 24px;
+    padding: 44px 0;
+    border-bottom: 1px solid var(--line);
   }
-  .meta-item { display: flex; flex-direction: column; gap: 3px; }
-  .meta-label {
+  @media (min-width:700px){ .cs-meta{ grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width:900px){ .cs-meta{ grid-template-columns: repeat(6, 1fr); gap: 24px; } }
+  .cs-meta-item span{
+    display:block;
+    font-family: var(--mono);
     font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--ink-faint);
+    color: var(--muted);
+    margin-bottom: 8px;
   }
-  .meta-val { font-size: 13px; color: var(--ink); }
-  h2 {
-    font-family: var(--serif);
-    font-size: 1.6rem;
-    font-weight: 400;
-    color: var(--ink);
-    margin: 3rem 0 0.75rem;
-  }
-  h3 {
-    font-size: 0.8rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
+  .cs-meta-item p{ font-size: 14px; margin:0; line-height:1.45; }
+
+  /* ============================================================
+     SECTION HEADERS + BODY COPY
+     ============================================================ */
+  .cs-section{ padding: 56px 0; border-bottom: 1px solid var(--line); }
+  .cs-section:last-of-type{ border-bottom:none; }
+  @media (min-width:900px){ .cs-section{ padding: 80px 0; } }
+  .cs-section-head{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--ink-faint);
-    margin: 2.5rem 0 0.75rem;
+    color: var(--accent);
+    margin-bottom: 22px;
   }
-  p { color: var(--ink-muted); margin-bottom: 1rem; max-width: 640px; }
-  p strong { color: var(--ink); font-weight: 500; }
-  .callout {
-    background: var(--accent-light);
-    border-radius: 8px;
-    padding: 1.25rem 1.5rem;
-    margin: 1.5rem 0;
-    max-width: 640px;
-    border-left: 3px solid var(--accent);
-  }
-  .callout p { margin: 0; color: var(--ink); font-size: 0.95rem; }
-  .callout p em {
+  .cs-section h2{ font-size: clamp(24px, 3.4vw, 32px); margin-bottom: 22px; max-width: 22ch; }
+  .cs-body{ max-width: 68ch; }
+  .cs-body p{ color: var(--muted); font-size: 16px; }
+  .cs-body p strong{ color: var(--ink); font-weight:600; }
+  .cs-body blockquote{
+    margin: 28px 0;
+    padding-left: 20px;
+    border-left: 2px solid var(--accent);
     font-family: var(--serif);
     font-style: italic;
-    font-size: 1.1rem;
+    font-size: 19px;
+    color: var(--ink);
   }
-  .two-col {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
-    margin: 1.5rem 0;
+
+  /* ============================================================
+     FIGURES (image + mono caption)
+     ============================================================ */
+  .cs-figure{ margin: 36px 0; }
+  .cs-figure img{ width:100%; border:1px solid var(--line); background: var(--paper-deep); }
+  .cs-figure figcaption{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 10px;
   }
-  .card {
-    background: var(--surface-2);
-    border-radius: 8px;
-    padding: 1rem 1.1rem;
-    border: 1px solid var(--border);
-  }
-  .card .c-title { font-size: 12px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
-  .card .c-body { font-size: 13px; color: var(--ink-muted); line-height: 1.5; margin: 0; max-width: none; }
-  .kpi-list {
-    list-style: none;
-    margin: 1rem 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-width: 580px;
-  }
-  .kpi-list li {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    font-size: 14px;
-    color: var(--ink-muted);
-  }
-  .kpi-list li::before {
-    content: '';
-    display: block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    flex-shrink: 0;
-    margin-top: 7px;
-  }
-  .role-badge {
-    display: inline-block;
+  .cs-figure-pair{ display:grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width:700px){ .cs-figure-pair{ grid-template-columns: 1fr 1fr; } }
+
+  /* ============================================================
+     CARD GRIDS (constraints, who we spoke to, insights)
+     ============================================================ */
+  .cs-cards{ display:grid; grid-template-columns: 1fr; gap: 1px; background: var(--line); margin-top: 8px; }
+  @media (min-width:700px){ .cs-cards{ grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width:1000px){ .cs-cards.cols-4{ grid-template-columns: repeat(4, 1fr); } }
+  .cs-card{ background: var(--paper); padding: 26px 24px; }
+  .cs-card-num{
+    font-family: var(--mono);
     font-size: 11px;
-    font-weight: 500;
-    padding: 3px 10px;
-    border-radius: 20px;
-    margin-right: 6px;
-    margin-bottom: 6px;
+    color: var(--accent-ink);
+    display:block;
+    margin-bottom: 10px;
   }
-  .role-owned { background: var(--accent); color: white; }
-  .role-contributed { background: var(--surface-3); color: var(--ink-muted); }
-  .divider { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
-  .screenshot-placeholder {
-    width: 100%;
-    background: var(--surface-2);
-    border: 1.5px dashed var(--surface-3);
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 2.5rem 1rem;
-    margin: 1.5rem 0;
+  .cs-card h4{
+    font-family: var(--serif);
+    font-weight:600;
+    font-size: 18px;
+    margin: 0 0 8px;
   }
-  .screenshot-placeholder .ph-label {
-    font-size: 12px;
-    font-weight: 500;
+  .cs-card p{ font-size: 14px; color: var(--muted); margin:0; }
+
+  /* ============================================================
+     STAT BLOCKS
+     ============================================================ */
+  .cs-stats{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); margin: 36px 0; }
+  @media (min-width:700px){ .cs-stats{ grid-template-columns: repeat(4, 1fr); } }
+  .cs-stat{ background: var(--paper); padding: 26px 20px; }
+  .cs-stat-num{
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(28px, 3.6vw, 38px);
+    color: var(--accent-ink);
+    display:block;
+    margin-bottom: 8px;
+  }
+  .cs-stat p{ font-size: 12.5px; color: var(--muted); margin:0; line-height:1.4; }
+
+  /* ============================================================
+     NUMBERED / ORDERED LIST (redesigned functions, principles)
+     ============================================================ */
+  .cs-list{ list-style:none; margin: 20px 0 0; padding:0; }
+  .cs-list li{
+    display:flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+    font-size: 15px;
+    color: var(--muted);
+  }
+  .cs-list li:last-child{ border-bottom: 1px solid var(--line); }
+  .cs-list li span.n{
+    font-family: var(--mono);
+    color: var(--accent-ink);
+    flex-shrink:0;
+    width: 24px;
+  }
+  .cs-list li strong{ color: var(--ink); }
+
+  /* ============================================================
+     OUTCOME STAT ROWS (Dastgyr outcomes)
+     ============================================================ */
+  .cs-outcomes{ display:flex; flex-direction:column; margin-top: 8px; }
+  .cs-outcome{ padding: 26px 0; border-top: 1px solid var(--line); }
+  .cs-outcome:last-child{ border-bottom: 1px solid var(--line); }
+  .cs-outcome h4{
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight:600;
+    margin: 0 0 8px;
+  }
+  .cs-outcome p{ font-size: 14.5px; color: var(--muted); margin:0; max-width: 64ch; }
+
+  /* ============================================================
+     VIDEO LINK CARD
+     ============================================================ */
+  .cs-video{
+    display:flex;
+    align-items:center;
+    gap: 20px;
+    border: 1px solid var(--line);
+    padding: 20px;
+    margin: 28px 0;
+    text-decoration:none;
+    color: inherit;
+  }
+  .cs-video:hover{ border-color: var(--accent); }
+  .cs-video-thumb{
+    width: 96px; height: 64px;
+    flex-shrink:0;
+    background: var(--ink);
+    color: var(--paper);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family: var(--mono);
+    font-size: 18px;
+  }
+  .cs-video-text span{
+    display:block;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color: var(--muted);
+    margin-bottom:4px;
+  }
+  .cs-video-text strong{ font-family: var(--serif); font-size: 17px; font-weight:600; }
+
+  /* ============================================================
+     PREV / NEXT CASE STUDY NAV
+     ============================================================ */
+  .cs-adjacent{
+    padding: 56px 0;
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .cs-adjacent a{
+    text-decoration:none;
+    color: inherit;
+  }
+  .cs-adjacent-label{
+    display:block;
+    font-family: var(--mono);
+    font-size: 10.5px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--ink-faint);
+    color: var(--muted);
+    margin-bottom: 8px;
   }
-  .screenshot-placeholder .ph-note {
-    font-size: 12px;
-    color: var(--ink-faint);
-    text-align: center;
-    max-width: 380px;
+  .cs-adjacent-title{
+    font-family: var(--serif);
+    font-weight:600;
+    font-size: clamp(18px, 2.2vw, 22px);
+    transition: color .15s;
+  }
+  .cs-adjacent a:hover .cs-adjacent-title{ color: var(--accent-ink); }
+  .cs-adjacent-next{ text-align: right; margin-left:auto; }
+
+  .pill{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    padding: 4px 8px;
+    display:inline-block;
+    width: fit-content;
+  }
+
+  /* ============================================================
+     FIGURE PLACEHOLDER (when no real screenshot exists yet)
+     ============================================================ */
+  .cs-figure.placeholder{
+    width: 100%;
+    aspect-ratio: unset;
+    min-height: 220px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 30px;
+    background-image: var(--placeholder-bg);
+    background-color: var(--paper-deep);
+    border: 1px dashed var(--muted);
+  }
+  .cs-figure.placeholder.tall{ min-height: 340px; }
+  .cs-figure.placeholder.short{ min-height: 150px; }
+  .cs-figure.placeholder .ph-label{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display:block;
+    margin-bottom: 8px;
+  }
+  .cs-figure.placeholder .ph-note{
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 46ch;
+    margin: 0 auto;
     line-height: 1.5;
   }
-  .screenshot-placeholder.tall { min-height: 300px; }
-  .screenshot-placeholder.medium { min-height: 200px; }
-  .screenshot-placeholder.short { min-height: 140px; }
-  .caption {
-    font-size: 12px;
-    color: var(--ink-faint);
-    font-style: italic;
-    margin-top: -0.75rem;
-    margin-bottom: 1.5rem;
-  }
 
-  /* Journey Map */
-  .journey-container {
-    width: 100%;
-    margin: 1.5rem 0 0.5rem;
+  /* ============================================================
+     ROLE BADGES (Owned / Contributed)
+     ============================================================ */
+  .role-badge{
+    display:inline-block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    margin: 0 6px 8px 0;
+  }
+  .role-badge.owned{ background: var(--accent); color: var(--paper); }
+  .role-badge.contributed{ background: var(--paper-deep); color: var(--muted); border: 1px solid var(--line); }
+
+  /* ============================================================
+     PERSONA CARD
+     ============================================================ */
+  .cs-persona{
+    border: 1px solid var(--line);
+    padding: 28px;
+    margin: 28px 0;
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  @media (min-width:700px){ .cs-persona{ grid-template-columns: 160px 1fr; gap: 32px; } }
+  .persona-avatar{
+    width: 64px; height:64px;
+    border-radius: 50%;
+    background: var(--paper-deep);
+    border: 1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .persona-name{ font-family: var(--serif); font-weight:600; font-size: 17px; margin-bottom: 2px; }
+  .persona-role{ font-family: var(--mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; }
+  .persona-attr{ font-size: 12.5px; color: var(--muted); margin-bottom: 3px; }
+  .persona-attr strong{ color: var(--ink); font-weight:600; }
+  .persona-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .persona-section .ps-title{
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    margin-bottom: 8px;
+  }
+  .persona-section ul{ list-style:none; margin:0; padding:0; }
+  .persona-section li{
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    padding-left: 12px;
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .persona-section li::before{ content:"–"; position:absolute; left:0; color: var(--accent); }
+
+  /* ============================================================
+     JOURNEY MAP (3 phases)
+     ============================================================ */
+  .cs-journey{
+    --phase-pre: var(--accent-ink);
+    --phase-pre-bg: var(--accent-soft);
+    --phase-intra: #4B6B3A;
+    --phase-intra-bg: #EEF1E4;
+    --phase-post: #9C5324;
+    --phase-post-bg: #F4EAE0;
+    border: 1px solid var(--line);
+    padding: 20px;
+    margin: 24px 0 0;
     overflow-x: auto;
   }
-  .journey-map {
-    min-width: 680px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.5rem;
-  }
-  .journey-phases {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 0;
-    margin-bottom: 1.25rem;
-  }
-  .phase-header {
-    text-align: center;
-    padding: 0.5rem 0.75rem;
+  .cs-journey-inner{ min-width: 640px; }
+  .cs-journey-heads{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .cs-journey-head{
+    text-align:center;
+    padding: 8px;
+    font-family: var(--mono);
     font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    border-radius: 6px 6px 0 0;
   }
-  .phase-header.pre { background: #dbeafe; color: #1e40af; }
-  .phase-header.intra { background: #dcfce7; color: #166534; }
-  .phase-header.post { background: #fef3c7; color: #92400e; }
-  .journey-steps-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 0;
-    border: 1px solid var(--border);
-    border-radius: 0 0 8px 8px;
-    overflow: hidden;
+  .cs-journey-head.pre{ background: var(--phase-pre-bg); color: var(--phase-pre); }
+  .cs-journey-head.intra{ background: var(--phase-intra-bg); color: var(--phase-intra); }
+  .cs-journey-head.post{ background: var(--phase-post-bg); color: var(--phase-post); }
+  .cs-journey-cols{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .cs-journey-col{ display:flex; flex-direction:column; gap: 8px; }
+  .cs-journey-step{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 10px 12px;
   }
-  .phase-col {
-    padding: 0.75rem;
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .phase-col:last-child { border-right: none; }
-  .phase-col.pre-col { background: #f0f7ff; }
-  .phase-col.intra-col { background: #f0fdf4; }
-  .phase-col.post-col { background: #fffbeb; }
-  .journey-step {
-    background: white;
-    border-radius: 6px;
-    padding: 8px 10px;
-    border: 1px solid var(--border);
-    position: relative;
-  }
-  .step-num {
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--ink-faint);
-    margin-bottom: 2px;
-  }
-  .step-text {
-    font-size: 11px;
-    color: var(--ink-muted);
-    line-height: 1.4;
-  }
-  .step-app {
-    display: inline-block;
-    margin-top: 4px;
+  .cs-journey-step .step-num{ font-family: var(--mono); font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+  .cs-journey-step .step-text{ font-size: 12px; color: var(--ink); line-height: 1.45; }
+  .cs-journey-step .step-app{
+    display:inline-block;
+    margin-top: 6px;
+    font-family: var(--mono);
     font-size: 9px;
-    font-weight: 500;
-    padding: 1px 6px;
-    border-radius: 10px;
-    background: var(--accent-light);
-    color: var(--accent);
     letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    background: var(--phase-pre-bg);
+    color: var(--phase-pre);
   }
-  .step-app.green {
-    background: #dcfce7;
-    color: #166534;
+  .cs-journey-step .step-app.green{ background: var(--phase-post-bg); color: var(--phase-post); }
+
+  /* ============================================================
+     CONTACT / FOOTER
+     ============================================================ */
+  footer{
+    background: var(--ink);
+    color: var(--paper);
+    padding: 70px 0 30px;
+  }
+  footer h2{ color: var(--paper); }
+  footer .lede{ color: rgba(243,240,233,0.65); }
+  .contact-links{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 14px;
+    margin-top: 30px;
+  }
+  footer .btn.primary{ background: var(--accent); border-color: var(--accent); color: var(--paper); }
+  footer .btn.primary:hover{ background: var(--paper); color: var(--ink); border-color: var(--paper); }
+  footer .btn.ghost{ border-color: rgba(243,240,233,0.4); }
+  footer .btn.ghost:hover{ background: var(--paper); color: var(--ink); }
+  footer .btn.placeholder{ border-color: rgba(243,240,233,0.3); color: rgba(243,240,233,0.55); }
+  footer .btn.placeholder:hover{ color: var(--accent); border-color: var(--accent); }
+
+  .foot-bottom{
+    margin-top: 70px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(243,240,233,0.15);
+    display:flex;
+    flex-direction: column;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(243,240,233,0.4);
+  }
+  @media (min-width:600px){
+    .foot-bottom{ flex-direction: row; justify-content: space-between; }
   }
 
-  /* Persona card */
-  .persona-card {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1.25rem;
-    margin: 1.5rem 0;
-    display: grid;
-    grid-template-columns: 160px 1fr;
-    gap: 1.25rem;
-  }
-  .persona-left { display: flex; flex-direction: column; gap: 8px; }
-  .persona-avatar {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: var(--surface-3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    color: var(--ink-faint);
-  }
-  .persona-name { font-size: 14px; font-weight: 500; color: var(--ink); }
-  .persona-role { font-size: 12px; color: var(--ink-faint); }
-  .persona-attrs { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
-  .persona-attr { font-size: 11px; color: var(--ink-muted); }
-  .persona-attr span { font-weight: 500; color: var(--ink); }
-  .persona-right { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-  .persona-section .ps-title { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); margin-bottom: 4px; }
-  .persona-section ul { list-style: none; display: flex; flex-direction: column; gap: 3px; }
-  .persona-section ul li { font-size: 12px; color: var(--ink-muted); padding-left: 10px; position: relative; line-height: 1.4; }
-  .persona-section ul li::before { content: '–'; position: absolute; left: 0; color: var(--accent); }
-
-  .footnote {
-    font-size: 12px;
-    color: var(--ink-faint);
-    font-style: italic;
-    margin-top: 3rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
-  }
 </style>
 </head>
 <body>
 
-  <p class="label">Optera Digital &nbsp;·&nbsp; Aug 2021 – Oct 2022 &nbsp;·&nbsp; Concept</p>
-  <h1>Designing <em>Perioperative</em></h1>
-  <p class="subtitle">An end-to-end concept for a patient-facing app that would help a plastic surgery clinical chain eliminate miscommunication, reduce liability, and give patients full control of their care journey.</p>
+  <nav class="rail" aria-hidden="true">
+    <div class="rail-line"></div>
+    <a class="rail-stop" href="#top" data-for="top"><span class="rail-label">TOP</span></a>
+    <a class="rail-stop" href="#problem" data-for="problem"><span class="rail-label">PROBLEM</span></a>
+    <a class="rail-stop" href="#journey" data-for="journey"><span class="rail-label">JOURNEY</span></a>
+    <a class="rail-stop" href="#ia" data-for="ia"><span class="rail-label">IA & FLOWS</span></a>
+    <a class="rail-stop" href="#branding" data-for="branding"><span class="rail-label">BRANDING</span></a>
+    <a class="rail-stop" href="#app" data-for="app"><span class="rail-label">APP</span></a>
+    <a class="rail-stop" href="#reflection" data-for="reflection"><span class="rail-label">REFLECTION</span></a>
+  </nav>
 
-  <div class="meta-row">
-    <div class="meta-item">
-      <span class="meta-label">My role</span>
-      <span class="meta-val">Lead Designer</span>
+  <header>
+    <div class="nav">
+      <a class="mark" href="index.html"><img src="images/aa-logo.png" alt="Anis Amir"></a>
+      <ul class="navlinks">
+        <li><a href="index.html#work">Work</a></li>
+        <li><a href="index.html#play">Play</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+      </ul>
     </div>
-    <div class="meta-item">
-      <span class="meta-label">Team</span>
-      <span class="meta-val">Lead designer, supporting designer, project supervisor</span>
-    </div>
-    <div class="meta-item">
-      <span class="meta-label">Platform</span>
-      <span class="meta-val">iOS (with web portal scoped)</span>
-    </div>
-    <div class="meta-item">
-      <span class="meta-label">Timeline</span>
-      <span class="meta-val">2 weeks (proof of concept)</span>
-    </div>
-    <div class="meta-item">
-      <span class="meta-label">Deliverables</span>
-      <span class="meta-val">Brand, User Flows, Prototype, Deck</span>
-    </div>
-    <div class="meta-item">
-      <span class="meta-label">Status</span>
-      <span class="meta-val">Concept (client lost funding)</span>
-    </div>
-  </div>
+  </header>
+  <main id="top">
 
-
-  <h2>The problem</h2>
-  <p>Perioperative care covers the full arc of a surgical patient's experience: preparation before the procedure, the procedure itself, and recovery after it. In a plastic surgery context, this arc can span weeks or months, and every stage carries a specific set of instructions, medications, lifestyle adjustments, and clinical checkpoints that the patient is expected to follow.</p>
-  <p>The clinical chain that commissioned this work had identified a recurring and serious problem. Miscommunication between provider and patient across this arc was generating real risk: patients misunderstanding pre-op instructions, missing medication schedules, failing to follow post-op protocols, and arriving underprepared for procedures. The downstream consequences ranged from poor clinical outcomes to liability exposure for the provider.</p>
-  <p>Their existing approach relied on printed handouts, verbal instructions, and follow-up calls. It was fragmented, undocumented, and entirely dependent on the patient's ability to retain and act on information delivered in a clinical setting, often at a moment of high anxiety.</p>
-
-  <div class="callout">
-    <p><em>"The problem was not that patients did not care. It was that the information they needed was scattered, difficult to act on, and delivered at exactly the wrong moment."</em></p>
-  </div>
-
-  <h3>What they wanted</h3>
-  <p>The client came to Optera with a request for a proof of concept: a patient-facing mobile application that would consolidate the full perioperative care experience into a single tool. If the concept landed, it would lead to a full product build including a clinical management dashboard and administrative portal. We were given complete creative latitude. Research and personas had already been prepared on their end.</p>
-
-
-  <hr class="divider">
-  <h2>My role</h2>
-  <p>I was the lead designer on this engagement. All design decisions, user flows, information architecture, branding, and visual design were mine. A second designer on the team experimented with alternative ideas informally, which helped sharpen the structure, but the final direction was mine throughout. In my project supervisor's words: the project was mine and he barely touched it.</p>
-  <p>
-    <span class="role-badge role-owned">Owned</span> Brand identity
-    <span class="role-badge role-owned">Owned</span> User flows and information architecture
-    <span class="role-badge role-owned">Owned</span> Persona and journey map development
-    <span class="role-badge role-owned">Owned</span> All screen design
-    <span class="role-badge role-owned">Owned</span> Interactive prototype
-    <span class="role-badge role-contributed">Contributed</span> Concept exploration (with second designer)
-  </p>
-
-
-  <hr class="divider">
-  <h2>Understanding the user</h2>
-
-  <p>The client provided initial research and persona foundations. From that material, we developed detailed personas and a full journey map that would anchor the design work. Multiple persona types were developed to represent the range of patients this platform would serve. The primary persona we worked against most closely was Jessica.</p>
-
-  <div class="persona-card">
-    <div class="persona-left">
-      <div class="persona-avatar">👤</div>
-      <p class="persona-name">Jessica M.</p>
-      <p class="persona-role">First-time patient</p>
-      <div class="persona-attrs">
-        <p class="persona-attr">Age: <span>28</span></p>
-        <p class="persona-attr">Location: <span>Los Angeles</span></p>
-        <p class="persona-attr">Occupation: <span>Online influencer</span></p>
-        <p class="persona-attr">Income: <span>$100,000+</span></p>
-      </div>
-    </div>
-    <div class="persona-right">
-      <div class="persona-section">
-        <p class="ps-title">Goals</p>
-        <ul>
-          <li>Understand the full process before committing</li>
-          <li>Stay in control of her schedule and recovery</li>
-          <li>Access all information in one place</li>
-        </ul>
-      </div>
-      <div class="persona-section">
-        <p class="ps-title">Challenges</p>
-        <ul>
-          <li>First surgery, high anxiety about the unknown</li>
-          <li>Tight schedule with little room for uncertainty</li>
-          <li>Information overload from online research</li>
-        </ul>
-      </div>
-      <div class="persona-section">
-        <p class="ps-title">Hopes</p>
-        <ul>
-          <li>Process will be easy to follow</li>
-          <li>Will feel more confident going in</li>
-          <li>Can manage alongside other commitments</li>
-        </ul>
-      </div>
-      <div class="persona-section">
-        <p class="ps-title">Fears</p>
-        <ul>
-          <li>Something goes wrong during recovery</li>
-          <li>Loses control of her own care timeline</li>
-          <li>Has to rely entirely on others</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <div class="screenshot-placeholder short">
-    <span class="ph-label">Screenshot</span>
-    <span class="ph-note">Full persona document including scenario narrative, from the project files</span>
-  </div>
-  <p class="caption">Above: Full persona and scenario documentation developed for the Perioperative project.</p>
-
-
-  <hr class="divider">
-  <h2>The patient journey</h2>
-
-  <p>One of the most important pieces of strategic work on this project was mapping the full patient journey from first clinical contact through to post-operative recovery. The journey runs thirteen steps across three phases, and it was this map that determined what the application needed to do and when it needed to do it.</p>
-  <p>What became clear through this process was that the app's role was not just informational. It needed to be an active participant in the care journey: creating reminders, surfacing instructions at the right moment, integrating with the patient's personal schedule, and generating a portable medical record as a byproduct of use. In other words, it had to function as a service layer, not just a content delivery tool.</p>
-
-  <div class="journey-container">
-    <div class="journey-map">
-      <div class="journey-phases">
-        <div class="phase-header pre">Pre-operative</div>
-        <div class="phase-header intra">Intraoperative</div>
-        <div class="phase-header post">Post-operative</div>
-      </div>
-      <div class="journey-steps-grid">
-        <div class="phase-col pre-col">
-          <div class="journey-step">
-            <p class="step-num">Step 1</p>
-            <p class="step-text">Patient arrives at the doctor's office for initial consultation</p>
-          </div>
-          <div class="journey-step">
-            <p class="step-num">Step 2</p>
-            <p class="step-text">Doctor gives assessment, fills out medical details, talks patient through the process</p>
-          </div>
-          <div class="journey-step">
-            <p class="step-num">Step 3</p>
-            <p class="step-text">Doctor recommends downloading the Perioperative app to manage the process</p>
-            <span class="step-app">App touchpoint</span>
-          </div>
-          <div class="journey-step">
-            <p class="step-num">Step 4</p>
-            <p class="step-text">Patient downloads app and signs up</p>
-            <span class="step-app">App touchpoint</span>
-          </div>
-          <div class="journey-step">
-            <p class="step-num">Step 5</p>
-            <p class="step-text">App collects medical profile and presents liability disclaimer. Patient fills in details.</p>
-            <span class="step-app">App touchpoint</span>
-          </div>
-          <div class="journey-step">
-            <p class="step-num">Step 6</p>
-            <p class="step-text">Patient researches procedure in the app: information, complications, pre-op care, timeline</p>
-            <span class="step-app">App touchpoint</span>
-          </div>
-          <div class="journey-step">
-            <p class="step-num">Step 7</p>
-            <p class="step-text">Patient books appointment through the app. App adds to calendar and activates reminders.</p>
-            <span class="step-app">App touchpoint</span>
-          </div>
-          <div class="journey-step">
-            <p class="step-num">Step 8</p>
-            <p class="step-text">App creates a surgery timeline and personalised reminders based on healthcare provider's schedule</p>
-            <span class="step-app">App touchpoint</span>
-          </div>
-          <div class="journey-step">
-            <p class="step-num">Step 9</p>
-            <p class="step-text">Day before surgery: app sends reminder to stop certain activities</p>
-            <span class="step-app">App touchpoint</span>
-          </div>
-        </div>
-        <div class="phase-col intra-col">
-          <div class="journey-step">
-            <p class="step-num">Step 10</p>
-            <p class="step-text">Patient goes through the procedure</p>
-          </div>
-        </div>
-        <div class="phase-col post-col">
-          <div class="journey-step">
-            <p class="step-num">Step 11</p>
-            <p class="step-text">Doctor provides medication list. Patient inputs it into the app, which creates automatic reminders for the medication schedule.</p>
-            <span class="step-app green">App touchpoint</span>
-          </div>
-          <div class="journey-step">
-            <p class="step-num">Step 12</p>
-            <p class="step-text">Patient uses the app daily during recovery: notes, diary entries, health tracking, aftercare information</p>
-            <span class="step-app green">App touchpoint</span>
-          </div>
-          <div class="journey-step">
-            <p class="step-num">Step 13</p>
-            <p class="step-text">App generates a temporary medical history from patient-provided data, exportable and shareable with other providers</p>
-            <span class="step-app green">App touchpoint</span>
-          </div>
+    <!-- ============================= HERO ============================= -->
+    <section class="cs-hero">
+      <div class="wrap">
+        <a class="cs-back" href="index.html#work">← Back to selected work</a>
+        <div class="eyebrow">Optera Digital · Aug 2021 – Oct 2022 · Concept</div>
+        <h1 class="cs-title">Designing <em>Perioperative</em></h1>
+        <p class="lede" style="margin-bottom:28px;">An end-to-end concept for a patient-facing app that would help a plastic surgery clinical chain eliminate miscommunication, reduce liability, and give patients full control of their care journey.</p>
+        <div class="cs-tags">
+          <span class="pill">Product Design</span>
+          <span class="pill">Brand Identity</span>
         </div>
       </div>
+      <div class="wrap" style="margin-top:20px;">
+        <div class="cs-figure placeholder" style="margin:0; aspect-ratio:16/9;">
+          <span class="ph-label">[Placeholder — cover image]</span>
+          <span class="ph-note">Perioperative app cover image or key screen, 16:9</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= META ============================= -->
+    <section style="padding:0;">
+      <div class="wrap">
+        <div class="cs-meta">
+          <div class="cs-meta-item"><span>My role</span><p>Lead Designer</p></div>
+          <div class="cs-meta-item"><span>Team</span><p>Lead designer, supporting designer, project supervisor</p></div>
+          <div class="cs-meta-item"><span>Platform</span><p>iOS (with web portal scoped)</p></div>
+          <div class="cs-meta-item"><span>Timeline</span><p>2 weeks (proof of concept)</p></div>
+          <div class="cs-meta-item"><span>Deliverables</span><p>Brand, User Flows, Prototype, Deck</p></div>
+          <div class="cs-meta-item"><span>Status</span><p>Concept (client lost funding)</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= THE PROBLEM ============================= -->
+    <section id="problem" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">The problem</div>
+        <div class="cs-body">
+          <p>Perioperative care covers the full arc of a surgical patient's experience: preparation before the procedure, the procedure itself, and recovery after it. In a plastic surgery context, this arc can span weeks or months, and every stage carries a specific set of instructions, medications, lifestyle adjustments, and clinical checkpoints that the patient is expected to follow.</p>
+          <p>The clinical chain that commissioned this work had identified a recurring and serious problem. Miscommunication between provider and patient across this arc was generating real risk: patients misunderstanding pre-op instructions, missing medication schedules, failing to follow post-op protocols, and arriving underprepared for procedures. The downstream consequences ranged from poor clinical outcomes to liability exposure for the provider.</p>
+          <p>Their existing approach relied on printed handouts, verbal instructions, and follow-up calls. It was fragmented, undocumented, and entirely dependent on the patient's ability to retain and act on information delivered in a clinical setting, often at a moment of high anxiety.</p>
+          <blockquote>The problem was not that patients did not care. It was that the information they needed was scattered, difficult to act on, and delivered at exactly the wrong moment.</blockquote>
+        </div>
+
+        <h3 style="margin-top:36px; margin-bottom:16px;">What they wanted</h3>
+        <div class="cs-body">
+          <p>The client came to Optera with a request for a proof of concept: a patient-facing mobile application that would consolidate the full perioperative care experience into a single tool. If the concept landed, it would lead to a full product build including a clinical management dashboard and administrative portal. We were given complete creative latitude. Research and personas had already been prepared on their end.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= MY ROLE ============================= -->
+    <section class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">My role</div>
+        <div class="cs-body">
+          <p>I was the lead designer on this engagement. All design decisions, user flows, information architecture, branding, and visual design were mine. A second designer on the team experimented with alternative ideas informally, which helped sharpen the structure, but the final direction was mine throughout. In my project supervisor's words, the project was mine and he barely touched it.</p>
+        </div>
+        <div style="margin-top:16px;">
+          <span class="role-badge owned">Owned — Brand identity</span>
+          <span class="role-badge owned">Owned — User flows and information architecture</span>
+          <span class="role-badge owned">Owned — Persona and journey map development</span>
+          <span class="role-badge owned">Owned — All screen design</span>
+          <span class="role-badge owned">Owned — Interactive prototype</span>
+          <span class="role-badge contributed">Contributed — Concept exploration (with second designer)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= UNDERSTANDING THE USER ============================= -->
+    <section id="journey" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">Understanding the user</div>
+        <div class="cs-body">
+          <p>The client provided initial research and persona foundations. From that material, we developed detailed personas and a full journey map that would anchor the design work. Multiple persona types were developed to represent the range of patients this platform would serve. The primary persona we worked against most closely was Jessica.</p>
+        </div>
+
+        <div class="cs-persona">
+          <div>
+            <div class="persona-avatar">JM</div>
+            <div class="persona-name">Jessica M.</div>
+            <div class="persona-role">First-time patient</div>
+            <p class="persona-attr">Age: <strong>28</strong></p>
+            <p class="persona-attr">Location: <strong>Los Angeles</strong></p>
+            <p class="persona-attr">Occupation: <strong>Online influencer</strong></p>
+            <p class="persona-attr">Income: <strong>$100,000+</strong></p>
+          </div>
+          <div class="persona-grid">
+            <div class="persona-section">
+              <div class="ps-title">Goals</div>
+              <ul>
+                <li>Understand the full process before committing</li>
+                <li>Stay in control of her schedule and recovery</li>
+                <li>Access all information in one place</li>
+              </ul>
+            </div>
+            <div class="persona-section">
+              <div class="ps-title">Challenges</div>
+              <ul>
+                <li>First surgery, high anxiety about the unknown</li>
+                <li>Tight schedule with little room for uncertainty</li>
+                <li>Information overload from online research</li>
+              </ul>
+            </div>
+            <div class="persona-section">
+              <div class="ps-title">Hopes</div>
+              <ul>
+                <li>Process will be easy to follow</li>
+                <li>Will feel more confident going in</li>
+                <li>Can manage alongside other commitments</li>
+              </ul>
+            </div>
+            <div class="persona-section">
+              <div class="ps-title">Fears</div>
+              <ul>
+                <li>Something goes wrong during recovery</li>
+                <li>Loses control of her own care timeline</li>
+                <li>Has to rely entirely on others</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <figure class="cs-figure placeholder short">
+          <span class="ph-label">[Placeholder — screenshot]</span>
+          <span class="ph-note">Full persona document including scenario narrative, from the project files</span>
+        </figure>
+        <figcaption style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:-20px; margin-bottom:32px;">Above: full persona and scenario documentation developed for the Perioperative project.</figcaption>
+
+        <h3 style="margin-top:8px; margin-bottom:16px;">The patient journey</h3>
+        <div class="cs-body">
+          <p>One of the most important pieces of strategic work on this project was mapping the full patient journey from first clinical contact through to post-operative recovery. The journey runs thirteen steps across three phases, and it was this map that determined what the application needed to do and when it needed to do it.</p>
+          <p>What became clear through this process was that the app's role was not just informational. It needed to be an active participant in the care journey: creating reminders, surfacing instructions at the right moment, integrating with the patient's personal schedule, and generating a portable medical record as a byproduct of use. In other words, it had to function as a service layer, not just a content delivery tool.</p>
+        </div>
+
+        <div class="cs-journey">
+          <div class="cs-journey-inner">
+            <div class="cs-journey-heads">
+              <div class="cs-journey-head pre">Pre-operative</div>
+              <div class="cs-journey-head intra">Intraoperative</div>
+              <div class="cs-journey-head post">Post-operative</div>
+            </div>
+            <div class="cs-journey-cols">
+              <div class="cs-journey-col">
+                <div class="cs-journey-step"><p class="step-num">Step 1</p><p class="step-text">Patient arrives at the doctor's office for initial consultation</p></div>
+                <div class="cs-journey-step"><p class="step-num">Step 2</p><p class="step-text">Doctor gives assessment, fills out medical details, talks patient through the process</p></div>
+                <div class="cs-journey-step"><p class="step-num">Step 3</p><p class="step-text">Doctor recommends downloading the Perioperative app to manage the process</p><span class="step-app">App touchpoint</span></div>
+                <div class="cs-journey-step"><p class="step-num">Step 4</p><p class="step-text">Patient downloads app and signs up</p><span class="step-app">App touchpoint</span></div>
+                <div class="cs-journey-step"><p class="step-num">Step 5</p><p class="step-text">App collects medical profile and presents liability disclaimer. Patient fills in details.</p><span class="step-app">App touchpoint</span></div>
+                <div class="cs-journey-step"><p class="step-num">Step 6</p><p class="step-text">Patient researches procedure in the app: information, complications, pre-op care, timeline</p><span class="step-app">App touchpoint</span></div>
+                <div class="cs-journey-step"><p class="step-num">Step 7</p><p class="step-text">Patient books appointment through the app. App adds to calendar and activates reminders.</p><span class="step-app">App touchpoint</span></div>
+                <div class="cs-journey-step"><p class="step-num">Step 8</p><p class="step-text">App creates a surgery timeline and personalized reminders based on healthcare provider's schedule</p><span class="step-app">App touchpoint</span></div>
+                <div class="cs-journey-step"><p class="step-num">Step 9</p><p class="step-text">Day before surgery: app sends reminder to stop certain activities</p><span class="step-app">App touchpoint</span></div>
+              </div>
+              <div class="cs-journey-col">
+                <div class="cs-journey-step"><p class="step-num">Step 10</p><p class="step-text">Patient goes through the procedure</p></div>
+              </div>
+              <div class="cs-journey-col">
+                <div class="cs-journey-step"><p class="step-num">Step 11</p><p class="step-text">Doctor provides medication list. Patient inputs it into the app, which creates automatic reminders for the medication schedule.</p><span class="step-app green">App touchpoint</span></div>
+                <div class="cs-journey-step"><p class="step-num">Step 12</p><p class="step-text">Patient uses the app daily during recovery: notes, diary entries, health tracking, aftercare information</p><span class="step-app green">App touchpoint</span></div>
+                <div class="cs-journey-step"><p class="step-num">Step 13</p><p class="step-text">App generates a temporary medical history from patient-provided data, exportable and shareable with other providers</p><span class="step-app green">App touchpoint</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:12px;">Above: full patient journey across all three perioperative phases, with app touchpoints marked.</p>
+
+        <div class="cs-body" style="margin-top:28px;">
+          <p>The journey made something visible that was not in the original brief: the application was not just a companion tool. It was doing the clinical communication work that the provider had previously done through verbal instruction and paper handouts. By step 13, it was also generating a portable medical record. The design had to carry that weight.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= INFORMATION ARCHITECTURE ============================= -->
+    <section id="ia" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">Information architecture and user flows</div>
+        <div class="cs-body">
+          <p>With the journey in hand, the next step was defining what the application needed to contain and how a user would move through it. I developed two levels of flow: a site map capturing the full information architecture, and a detailed user flow charting every decision point and state transition across the main user paths.</p>
+        </div>
+
+        <figure class="cs-figure placeholder short">
+          <span class="ph-label">[Placeholder — screenshot]</span>
+          <span class="ph-note">Information architecture sitemap showing full application structure across all four navigation sections</span>
+        </figure>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:-16px; margin-bottom:28px;">Above: application sitemap developed at the start of the design process.</p>
+
+        <figure class="cs-figure placeholder medium">
+          <span class="ph-label">[Placeholder — screenshot]</span>
+          <span class="ph-note">Detailed user flow diagram showing all decision trees, states, and paths across the application</span>
+        </figure>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:-16px; margin-bottom:28px;">Above: full user flow covering onboarding, surgery discovery, appointment scheduling, and health tracking.</p>
+
+        <div class="cs-body">
+          <p>The architecture resolved into four primary sections accessible from the main navigation: Home, Calendar, My Health, and Surgeries. Each section served a distinct function in the care journey, but they connected to each other in meaningful ways: a surgery selected in the Surgeries section would feed into the Calendar, which would generate tasks and reminders that surfaced on the Home dashboard. The app was designed to feel like one coherent system rather than four separate tools bundled together.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= BRANDING ============================= -->
+    <section id="branding" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">Branding</div>
+        <div class="cs-body">
+          <p>The brief required a full brand alongside the product design. The name Perioperative was given; everything else needed to be built from scratch.</p>
+          <p>The visual identity needed to communicate clinical credibility without feeling cold or institutional. Healthcare design has a long history of defaulting to sterile blues and hard edges. The goal here was something warmer: trustworthy enough for a medical context, approachable enough for a patient who is anxious about a procedure they have never been through before.</p>
+          <p>The logo mark uses two overlapping leaf-like forms in blue and green, suggesting continuity and growth, sitting comfortably next to a clean, modern wordmark in the same dark blue. The color palette carried those two tones through the full interface.</p>
+        </div>
+
+        <figure class="cs-figure placeholder short">
+          <span class="ph-label">[Placeholder — screenshot]</span>
+          <span class="ph-note">Perioperative logo, brand colors, and typography system</span>
+        </figure>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:-16px;">Above: the Perioperative brand identity developed for this project.</p>
+      </div>
+    </section>
+
+    <!-- ============================= THE APPLICATION ============================= -->
+    <section id="app" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">The application</div>
+        <div class="cs-body">
+          <p>The application was designed entirely in high fidelity, from splash screen through to the full feature set. The visual language was clean, warm, and deliberately approachable, using illustrated characters throughout to soften the clinical content and reduce the anxiety a first-time surgical patient might bring to the experience.</p>
+        </div>
+
+        <h3 style="margin-top:40px; margin-bottom:14px;">Home dashboard</h3>
+        <div class="cs-body">
+          <p>The home screen was designed around the patient's immediate context: their current health status, what is coming up in their surgery schedule, and what they need to do today. A daily check-in prompt surfaces every morning. The surgery timeline and daily tasks sit below it. Daily health stats anchor the bottom, giving the patient a sense of progress and control.</p>
+        </div>
+        <figure class="cs-figure placeholder tall">
+          <span class="ph-label">[Placeholder — screenshot]</span>
+          <span class="ph-note">Home dashboard, splash screen, and login screens</span>
+        </figure>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:-16px; margin-bottom:8px;">Above: onboarding and home dashboard screens.</p>
+
+        <h3 style="margin-top:40px; margin-bottom:14px;">Calendar</h3>
+        <div class="cs-body">
+          <p>The calendar integrated the patient's full care timeline: appointments, reminders, medication schedules, and to-do tasks in one view. Rather than requiring the patient to manually enter everything, the app populated the calendar from the surgery information and provider-supplied schedules, with the patient confirming and adding personal items on top.</p>
+        </div>
+        <figure class="cs-figure placeholder medium">
+          <span class="ph-label">[Placeholder — screenshot]</span>
+          <span class="ph-note">Calendar view showing monthly layout, reminders, to-do items, and upcoming appointments</span>
+        </figure>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:-16px; margin-bottom:8px;">Above: calendar screen with integrated reminders and appointment management.</p>
+
+        <h3 style="margin-top:40px; margin-bottom:14px;">My Health</h3>
+        <div class="cs-body">
+          <p>The health tracking section gave patients visibility into the lifestyle factors most relevant to surgical recovery: sleep, water intake, steps, calories, medicine intake, and daily mood. Progress bars made it easy to see at a glance where the patient stood against their daily targets. Each metric had its own detail view with logging tools and historical trends.</p>
+        </div>
+        <figure class="cs-figure placeholder medium">
+          <span class="ph-label">[Placeholder — screenshot]</span>
+          <span class="ph-note">My Health screen with today's progress tracking and health management tiles</span>
+        </figure>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:-16px; margin-bottom:8px;">Above: health tracking screen with daily progress overview and management tools.</p>
+
+        <h3 style="margin-top:40px; margin-bottom:14px;">Surgeries</h3>
+        <div class="cs-body">
+          <p>The surgeries section served two functions. For patients who had not yet committed to a procedure, it was a discovery and education tool: a searchable, filterable library of procedures with detailed information about each one including pre-op care, post-op care, possible complications, and available surgeons. For patients who had already scheduled a surgery, it became a management view, connecting the procedure to their calendar, generating tasks, and tracking their progress through the care timeline.</p>
+          <p>The "I'm having this surgery" action in the flow was the bridge between these two modes, and a key design decision: it was the moment the application went from informational to active, moving the surgery into the patient's personal care plan and triggering the full care management functionality.</p>
+        </div>
+        <figure class="cs-figure placeholder tall">
+          <span class="ph-label">[Placeholder — screenshot]</span>
+          <span class="ph-note">Surgeries section: procedure list with filters, procedure detail with tabbed information, and surgeon profile with appointment scheduling</span>
+        </figure>
+        <p style="font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); margin-top:-16px;">Above: surgeries section showing procedure discovery, detailed procedure information, and surgeon booking.</p>
+      </div>
+    </section>
+
+    <!-- ============================= SCOPED BUT NOT BUILT ============================= -->
+    <section class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">What was scoped but not built</div>
+        <div class="cs-body">
+          <p>The proof of concept was designed with the next phase in mind. The client's intention was to follow a successful RFP with a full product build that included a clinical management dashboard and administrative portal on the provider side. That would have turned Perioperative from a patient-facing app into a two-sided platform: one interface for patients managing their care, and one for the clinical team managing their patients.</p>
+          <p>The project did not get there. The client lost funding shortly after the concept was presented and the engagement was closed. The designs and prototype represent the full scope of what was completed.</p>
+          <blockquote>This case study represents a complete, high-fidelity proof of concept delivered under a two-week timeline, across brand, UX, and product design, for a clinical use case that was technically and regulatorily non-trivial. It did not ship. What it demonstrates is the ability to move quickly, hold strategic intent and design quality at the same time, and produce something credible enough that the next step would have been a full build.</blockquote>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= REFLECTION ============================= -->
+    <section id="reflection" class="cs-section">
+      <div class="wrap">
+        <div class="cs-section-head">Reflection</div>
+        <div class="cs-body">
+          <p>The most interesting design challenge on Perioperative was not any individual screen. It was recognizing early that the journey map was not just a research artifact. It was the actual product specification. Once the thirteen steps were clear, every feature decision followed logically. The application was, in essence, a digital translation of the care journey, with an interface layer on top.</p>
+          <p>The part of the work I would most like to have continued was the provider side. A patient app that operates without a connected clinical portal is only solving half the problem. The real opportunity was in closing the loop between patient and provider, making the patient's behavior and progress visible to the care team in real time. That was the system the client originally had in mind, and it remains an interesting design problem.</p>
+          <p style="font-size:13px; font-style:italic; margin-top:28px; padding-top:20px; border-top:1px solid var(--line);">This project was a proof of concept delivered as part of an RFP at Optera Digital. The client lost funding and the project was not developed further. All screens and materials are original work.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= ADJACENT CASE STUDY ============================= -->
+    <section style="padding:0;">
+      <div class="wrap">
+        <hr class="rule">
+        <div class="cs-adjacent">
+          <a href="dastgyr.html">
+            <span class="cs-adjacent-label">Previous case study</span>
+            <span class="cs-adjacent-title">← Dastgyr Technologies</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================= FOOTER / CONTACT ============================= -->
+  <footer id="contact">
+    <div class="wrap">
+      <div class="eyebrow" style="color:var(--accent);">Get in touch</div>
+      <h2 style="max-width:16ch;">Let's talk about a role, a project, or a problem worth taking apart.</h2>
+      <p class="lede">For the full picture, ask for a résumé or see LinkedIn.</p>
+      <div class="contact-links">
+        <a class="btn primary" href="#" title="Placeholder — mailto link">[Email — placeholder]</a>
+        <a class="btn ghost" href="https://www.linkedin.com/in/anispunjwani">LinkedIn</a>
+        <a class="btn ghost" href="https://www.instagram.com/anispunjwani">Instagram</a>
+      </div>
+
+      <div class="foot-bottom">
+        <span>© 2026 Anis Amir. All rights reserved.</span>
+        <span>You've reached the bottom. There's nothing else down here.</span>
+      </div>
     </div>
-  </div>
-  <p class="caption">Above: Full patient journey across all three perioperative phases, with app touchpoints marked. Developed by Anis Punjwani at Optera Digital.</p>
-
-  <p>The journey made something visible that was not in the original brief: the application was not just a companion tool. It was doing the clinical communication work that the provider had previously done through verbal instruction and paper handouts. By step 13, it was also generating a portable medical record. The design had to carry that weight.</p>
+  </footer>
 
 
-  <hr class="divider">
-  <h2>Information architecture and user flows</h2>
+  <script>
+    // Wayfinding rail: dot positions are computed from each section's real
+    // offset in the document (as a share of total scrollable height), then
+    // mapped onto the rail track. Recomputed on load and resize since section
+    // heights change with viewport width and placeholder content.
+    (function(){
+      var stops = document.querySelectorAll('.rail-stop');
+      var track = document.querySelector('.rail-line');
+      if(!stops.length || !track) return;
 
-  <p>With the journey in hand, the next step was defining what the application needed to contain and how a user would move through it. I developed two levels of flow: a site map capturing the full information architecture, and a detailed user flow charting every decision point and state transition across the main user paths.</p>
+      var sections = Array.prototype.map.call(stops, function(s){
+        return document.getElementById(s.getAttribute('data-for'));
+      });
 
-  <div class="screenshot-placeholder short">
-    <span class="ph-label">Screenshot</span>
-    <span class="ph-note">Information architecture sitemap showing full application structure across all four navigation sections</span>
-  </div>
-  <p class="caption">Above: Application sitemap developed at the start of the design process.</p>
+      function layout(){
+        // .rail-line and .rail-stop are both fixed-position, so their
+        // coordinates are already viewport-relative. No scrollY math needed,
+        // that was the bug causing dots to fall short of the track's bottom.
+        var trackRect = track.getBoundingClientRect();
+        var trackTop = trackRect.top;
+        var trackHeight = track.offsetHeight;
 
-  <div class="screenshot-placeholder medium">
-    <span class="ph-label">Screenshot</span>
-    <span class="ph-note">Detailed user flow diagram showing all decision trees, states, and paths across the application</span>
-  </div>
-  <p class="caption">Above: Full user flow covering onboarding, surgery discovery, appointment scheduling, and health tracking.</p>
+        var firstTop = sections[0] ? sections[0].offsetTop : 0;
+        var lastSection = sections[sections.length - 1];
+        var lastTop = lastSection ? lastSection.offsetTop : firstTop + 1;
+        var span = (lastTop - firstTop) || 1;
 
-  <p>The architecture resolved into four primary sections accessible from the main navigation: Home, Calendar, My Health, and Surgeries. Each section served a distinct function in the care journey, but they connected to each other in meaningful ways: a surgery selected in the Surgeries section would feed into the Calendar, which would generate tasks and reminders that surfaced on the Home dashboard. The app was designed to feel like one coherent system rather than four separate tools bundled together.</p>
+        sections.forEach(function(sec, i){
+          if(!sec) return;
+          var ratio = (sec.offsetTop - firstTop) / span;
+          ratio = Math.max(0, Math.min(1, ratio));
+          stops[i].style.top = (trackTop + ratio * trackHeight) + 'px';
+        });
+      }
 
+      function onScroll(){
+        var atBottom = (window.scrollY + window.innerHeight) >= (document.body.scrollHeight - 2);
+        var pos = window.scrollY + window.innerHeight * 0.3;
+        var activeIndex = 0;
+        sections.forEach(function(sec, i){
+          if(sec && sec.offsetTop <= pos) activeIndex = i;
+        });
+        // The lookahead above can mathematically fall short of the final
+        // section if it sits deep inside a tall footer, so force the last
+        // dot active once the page is actually scrolled to the bottom.
+        if(atBottom) activeIndex = sections.length - 1;
+        stops.forEach(function(s, i){
+          s.classList.toggle('active', i === activeIndex);
+        });
+      }
 
-  <hr class="divider">
-  <h2>Branding</h2>
+      layout();
+      onScroll();
+      window.addEventListener('resize', layout);
+      document.addEventListener('scroll', onScroll, { passive: true });
+    })();
+  </script>
 
-  <p>The brief required a full brand alongside the product design. The name Perioperative was given; everything else needed to be built from scratch.</p>
-  <p>The visual identity needed to communicate clinical credibility without feeling cold or institutional. Healthcare design has a long history of defaulting to sterile blues and hard edges. The goal here was something warmer: trustworthy enough for a medical context, approachable enough for a patient who is anxious about a procedure they have never been through before.</p>
-  <p>The logo mark uses two overlapping leaf-like forms in blue and green, suggesting continuity and growth, sitting comfortably next to a clean, modern wordmark in the same dark blue. The color palette carried those two tones through the full interface.</p>
-
-  <div class="screenshot-placeholder short">
-    <span class="ph-label">Screenshot</span>
-    <span class="ph-note">Perioperative logo, brand colors, and typography system</span>
-  </div>
-  <p class="caption">Above: The Perioperative brand identity developed for this project.</p>
-
-
-  <hr class="divider">
-  <h2>The application</h2>
-
-  <p>The application was designed entirely in high fidelity, from splash screen through to the full feature set. The visual language was clean, warm, and deliberately approachable, using illustrated characters throughout to soften the clinical content and reduce the anxiety a first-time surgical patient might bring to the experience.</p>
-
-  <h3>Home dashboard</h3>
-  <p>The home screen was designed around the patient's immediate context: their current health status, what is coming up in their surgery schedule, and what they need to do today. A daily check-in prompt surfaces every morning. The surgery timeline and daily tasks sit below it. Daily health stats anchor the bottom, giving the patient a sense of progress and control.</p>
-
-  <div class="screenshot-placeholder tall">
-    <span class="ph-label">Screenshot</span>
-    <span class="ph-note">Home dashboard, splash screen, and login screens</span>
-  </div>
-  <p class="caption">Above: Onboarding and home dashboard screens.</p>
-
-  <h3>Calendar</h3>
-  <p>The calendar integrated the patient's full care timeline: appointments, reminders, medication schedules, and to-do tasks in one view. Rather than requiring the patient to manually enter everything, the app populated the calendar from the surgery information and provider-supplied schedules, with the patient confirming and adding personal items on top.</p>
-
-  <div class="screenshot-placeholder medium">
-    <span class="ph-label">Screenshot</span>
-    <span class="ph-note">Calendar view showing monthly layout, reminders, to-do items, and upcoming appointments</span>
-  </div>
-  <p class="caption">Above: Calendar screen with integrated reminders and appointment management.</p>
-
-  <h3>My Health</h3>
-  <p>The health tracking section gave patients visibility into the lifestyle factors most relevant to surgical recovery: sleep, water intake, steps, calories, medicine intake, and daily mood. Progress bars made it easy to see at a glance where the patient stood against their daily targets. Each metric had its own detail view with logging tools and historical trends.</p>
-
-  <div class="screenshot-placeholder medium">
-    <span class="ph-label">Screenshot</span>
-    <span class="ph-note">My Health screen with today's progress tracking and health management tiles</span>
-  </div>
-  <p class="caption">Above: Health tracking screen with daily progress overview and management tools.</p>
-
-  <h3>Surgeries</h3>
-  <p>The surgeries section served two functions. For patients who had not yet committed to a procedure, it was a discovery and education tool: a searchable, filterable library of procedures with detailed information about each one including pre-op care, post-op care, possible complications, and available surgeons. For patients who had already scheduled a surgery, it became a management view: connecting the procedure to their calendar, generating tasks, and tracking their progress through the care timeline.</p>
-  <p>The "I'm having this surgery" action in the flow was the bridge between these two modes, and a key design decision: it was the moment the application went from informational to active, moving the surgery into the patient's personal care plan and triggering the full care management functionality.</p>
-
-  <div class="screenshot-placeholder tall">
-    <span class="ph-label">Screenshot</span>
-    <span class="ph-note">Surgeries section: procedure list with filters, procedure detail with tabbed information, and surgeon profile with appointment scheduling</span>
-  </div>
-  <p class="caption">Above: Surgeries section showing procedure discovery, detailed procedure information, and surgeon booking.</p>
-
-
-  <hr class="divider">
-  <h2>What was scoped but not built</h2>
-
-  <p>The proof of concept was designed with the next phase in mind. The client's intention was to follow a successful RFP with a full product build that included a clinical management dashboard and administrative portal on the provider side. That would have turned Perioperative from a patient-facing app into a two-sided platform: one interface for patients managing their care, and one for the clinical team managing their patients.</p>
-  <p>The project did not get there. The client lost funding shortly after the concept was presented and the engagement was closed. The designs and prototype represent the full scope of what was completed.</p>
-
-  <div class="callout">
-    <p>This case study represents a complete, high-fidelity proof of concept delivered under a two-week timeline, across brand, UX, and product design, for a clinical use case that was technically and regulatorily non-trivial. It did not ship. What it demonstrates is the ability to move quickly, hold strategic intent and design quality at the same time, and produce something credible enough that the next step would have been a full build.</p>
-  </div>
-
-
-  <hr class="divider">
-  <h2>Reflection</h2>
-
-  <p>The most interesting design challenge on Perioperative was not any individual screen. It was recognizing early that the journey map was not just a research artifact. It was the actual product specification. Once the thirteen steps were clear, every feature decision followed logically. The application was, in essence, a digital translation of the care journey, with an interface layer on top.</p>
-  <p>The part of the work I would most like to have continued was the provider side. A patient app that operates without a connected clinical portal is only solving half the problem. The real opportunity was in closing the loop between patient and provider, making the patient's behavior and progress visible to the care team in real time. That was the system the client originally had in mind, and it remains an interesting design problem.</p>
-
-  <p class="footnote">This project was a proof of concept delivered as part of an RFP at Optera Digital. The client lost funding and the project was not developed further. All screens and materials are original work.</p>
 
 </body>
 </html>
